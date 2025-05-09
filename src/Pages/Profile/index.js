@@ -1,1627 +1,760 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useEffect, useContext, useState } from "react";
+import { MyContext } from "../../App";
+import { useNavigate } from "react-router-dom";
 import {
-  Box,
-  Container,
-  Typography,
   TextField,
   Button,
+  Box,
+  Typography,
+  Container,
   Grid,
-  Paper,
+  Snackbar,
+  Alert,
   Divider,
-  CircularProgress,
-  FormControl,
+  Avatar,
+  IconButton,
   Card,
   CardContent,
-  MenuItem,
-  Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
-  IconButton,
+  Chip,
+  InputAdornment,
+  Tooltip,
+  useTheme,
+  useMediaQuery,
 } from "@mui/material";
-import { useNavigate } from "react-router-dom";
-import { IoLocationSharp, IoCardSharp } from "react-icons/io5";
-import { FaMoneyBillWave, FaWallet, FaTicketAlt } from "react-icons/fa";
-import { MdCreditCard } from "react-icons/md";
-import {
-  getCart,
-  getSavedVouchers,
-  createVnpayPayment,
-} from "../../services/api";
-import { toast } from "react-hot-toast";
-import axios from "axios";
-import voucherImg from "../../assets/images/voucher.jpg";
-import "../Voucher/Voucher.css";
+import { getUserProfile, updateUserProfile } from "../../services/api";
 
-// Set baseURL for axios
-axios.defaults.baseURL = "http://localhost:4000";
+// Các icon component
+const EditIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="24"
+    height="24"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+    <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+  </svg>
+);
 
-const Checkout = () => {
+const SaveIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path>
+    <polyline points="17 21 17 13 7 13 7 21"></polyline>
+    <polyline points="7 3 7 8 15 8"></polyline>
+  </svg>
+);
+
+const CancelIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <line x1="18" y1="6" x2="6" y2="18"></line>
+    <line x1="6" y1="6" x2="18" y2="18"></line>
+  </svg>
+);
+
+const LockIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+  </svg>
+);
+
+const UserIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+    <circle cx="12" cy="7" r="4"></circle>
+  </svg>
+);
+
+const EmailIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+    <polyline points="22,6 12,13 2,6"></polyline>
+  </svg>
+);
+
+const PhoneIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="20"
+    height="20"
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="2"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+  >
+    <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
+  </svg>
+);
+
+const GoogleIcon = () => (
+  <svg
+    xmlns="http://www.w3.org/2000/svg"
+    width="16"
+    height="16"
+    viewBox="0 0 48 48"
+  >
+    <path
+      fill="#FFC107"
+      d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12s5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24s8.955,20,20,20s20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"
+    />
+    <path
+      fill="#FF3D00"
+      d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"
+    />
+    <path
+      fill="#4CAF50"
+      d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"
+    />
+    <path
+      fill="#1976D2"
+      d="M43.611,20.083L43.595,20L42,20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"
+    />
+  </svg>
+);
+
+// Hàm lấy chữ cái đầu từ tên người dùng
+const getInitials = (name) => {
+  if (!name) return "U";
+  return name
+    .split(" ")
+    .map((word) => word[0])
+    .join("")
+    .toUpperCase()
+    .substring(0, 2);
+};
+
+// Hàm tạo màu ngẫu nhiên nhưng ổn định cho avatar
+const stringToColor = (string) => {
+  if (!string) return "#00aaff";
+  let hash = 0;
+  for (let i = 0; i < string.length; i++) {
+    hash = string.charCodeAt(i) + ((hash << 5) - hash);
+  }
+  let color = "#";
+  for (let i = 0; i < 3; i++) {
+    const value = (hash >> (i * 8)) & 0xff;
+    color += ("00" + value.toString(16)).substr(-2);
+  }
+  return color;
+};
+
+const Profile = () => {
+  const context = useContext(MyContext);
   const navigate = useNavigate();
-  const [user, setUser] = useState(null);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
+
   const [formData, setFormData] = useState({
-    fullName: "",
+    name: "",
+    email: "",
     phone: "",
-    address: "",
-    city: "",
-    cityName: "",
-    district: "",
-    districtName: "",
-    ward: "",
-    wardName: "",
   });
-  const [errors, setErrors] = useState({});
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [cartItems, setCartItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [paymentMethod, setPaymentMethod] = useState(null);
-  const [note, setNote] = useState("");
-  const [error, setError] = useState(null);
-
-  // Address data
-  const [provinces, setProvinces] = useState([]);
-  const [districts, setDistricts] = useState([]);
-  const [wards, setWards] = useState([]);
-
-  const [vouchers, setVouchers] = useState([]);
-  const [selectedVoucher, setSelectedVoucher] = useState(null);
-  const [openVoucherDialog, setOpenVoucherDialog] = useState(false);
-  const [discountAmount, setDiscountAmount] = useState(0);
-
-  const [orderId, setOrderId] = useState(null);
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [validationErrors, setValidationErrors] = useState({});
+  const [isEditing, setIsEditing] = useState(false);
+  const [isGoogleUser, setIsGoogleUser] = useState(false);
+  const [avatarColor, setAvatarColor] = useState("#00aaff");
 
   useEffect(() => {
-    // Check if user is logged in
-    const token = localStorage.getItem("token");
-    if (!token) {
-      navigate("/signin");
+    fetchUserProfile();
+  }, []);
+
+  useEffect(() => {
+    if (formData.name) {
+      setAvatarColor(stringToColor(formData.name));
+    }
+  }, [formData.name]);
+
+  const fetchUserProfile = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+      // Kiểm tra nếu là user Google
+      if (!token && user?.authProvider === "google") {
+        setIsGoogleUser(true);
+        const googleUserData = {
+          name: user.name || "",
+          email: user.email || "",
+          phone: user.phone || "",
+        };
+        setFormData(googleUserData);
+        context.setUser(user);
+        return;
+      }
+
+      // Kiểm tra token cho người dùng thông thường
+      if (!token) {
+        context.setIsLogin(false);
+        navigate("/signin");
+        return;
+      }
+
+      const userData = await getUserProfile();
+
+      const formattedData = {
+        name: userData.name || "",
+        email: userData.email || "",
+        phone: userData.phone || "",
+      };
+
+      setFormData(formattedData);
+
+      // Cập nhật thông tin authProvider
+      if (userData.authProvider === "google") {
+        setIsGoogleUser(true);
+      }
+
+      context.setUser(userData);
+    } catch (err) {
+      console.error("Lỗi khi tải thông tin:", err);
+      if (
+        err.response?.status === 401 ||
+        err.message === "Không tìm thấy token"
+      ) {
+        localStorage.removeItem("token");
+        context.setIsLogin(false);
+        navigate("/signin");
+      } else {
+        setError("Không thể tải thông tin người dùng. Vui lòng thử lại sau.");
+      }
+    }
+  };
+
+  const validateForm = () => {
+    const errors = {};
+
+    if (!formData.name) {
+      errors.name = "Tên không được để trống";
+    }
+
+    if (!formData.phone) {
+      errors.phone = "Số điện thoại không được để trống";
+    } else if (!/^\d{10,11}$/.test(formData.phone)) {
+      errors.phone = "Số điện thoại không hợp lệ";
+    }
+
+    setValidationErrors(errors);
+    return Object.keys(errors).length === 0;
+  };
+
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({
+      ...prev,
+      [name]: value || "",
+    }));
+
+    if (validationErrors[name]) {
+      setValidationErrors((prev) => ({
+        ...prev,
+        [name]: "",
+      }));
+    }
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setError("");
+
+    if (!validateForm()) {
       return;
     }
 
-    // Get user info from localStorage
-    const userData = JSON.parse(localStorage.getItem("user"));
-    if (userData) {
-      setUser(userData);
-
-      // Pre-fill user data if available
-      if (userData.fullName) {
-        setFormData((prev) => ({
-          ...prev,
-          fullName: userData.fullName || "",
-          phone: userData.phone || "",
-        }));
-      }
-    }
-
-    // Fetch cart data
-    const fetchCart = async () => {
-      try {
-        const response = await getCart();
-        if (!response.items || response.items.length === 0) {
-          toast.error("Giỏ hàng trống");
-          navigate("/cart");
-          return;
-        }
-        setCartItems(response.items || []);
-      } catch (error) {
-        console.error("Error fetching cart:", error);
-        toast.error("Không thể tải giỏ hàng");
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    // Fetch provinces
-    const fetchProvinces = async () => {
-      try {
-        const response = await fetch("https://provinces.open-api.vn/api/p/");
-        const data = await response.json();
-        setProvinces(data);
-      } catch (error) {
-        console.error("Error fetching provinces:", error);
-        toast.error("Không thể tải danh sách tỉnh/thành phố");
-      }
-    };
-
-    fetchCart();
-    fetchProvinces();
-  }, [navigate]);
-
-  // Fetch districts when province changes
-  const handleProvinceChange = async (e) => {
-    const provinceCode = e.target.value;
-    const selectedProvince = provinces.find((p) => p.code === provinceCode);
-
-    setFormData({
-      ...formData,
-      city: provinceCode,
-      cityName: selectedProvince ? selectedProvince.name : "",
-      district: "",
-      districtName: "",
-      ward: "",
-      wardName: "",
-    });
+    setLoading(true);
 
     try {
-      const response = await fetch(
-        `https://provinces.open-api.vn/api/p/${provinceCode}?depth=2`
-      );
-      const data = await response.json();
-      setDistricts(data.districts || []);
-      setWards([]);
-    } catch (error) {
-      console.error("Error fetching districts:", error);
-      toast.error("Không thể tải danh sách quận/huyện");
-    }
-  };
+      // Xử lý riêng cho Google user
+      if (isGoogleUser) {
+        const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+        const updatedUser = {
+          ...currentUser,
+          name: formData.name || "",
+          phone: formData.phone || "",
+        };
 
-  // Fetch wards when district changes
-  const handleDistrictChange = async (e) => {
-    const districtCode = e.target.value;
-    const selectedDistrict = districts.find((d) => d.code === districtCode);
-
-    setFormData({
-      ...formData,
-      district: districtCode,
-      districtName: selectedDistrict ? selectedDistrict.name : "",
-      ward: "",
-      wardName: "",
-    });
-
-    try {
-      const response = await fetch(
-        `https://provinces.open-api.vn/api/d/${districtCode}?depth=2`
-      );
-      const data = await response.json();
-      setWards(data.wards || []);
-    } catch (error) {
-      console.error("Error fetching wards:", error);
-      toast.error("Không thể tải danh sách phường/xã");
-    }
-  };
-
-  // Update ward when selected
-  const handleWardChange = (e) => {
-    const wardCode = e.target.value;
-    const selectedWard = wards.find((w) => w.code === wardCode);
-
-    setFormData({
-      ...formData,
-      ward: wardCode,
-      wardName: selectedWard ? selectedWard.name : "",
-    });
-  };
-
-  // Handle form field changes
-  const handleChange = (e) => {
-    setFormData({
-      ...formData,
-      [e.target.name]: e.target.value,
-    });
-  };
-
-  // Validate form
-  const validateForm = () => {
-    const newErrors = {};
-    if (!formData.fullName) newErrors.fullName = "Vui lòng nhập họ tên";
-    if (!formData.phone) newErrors.phone = "Vui lòng nhập số điện thoại";
-    else if (!/^[0-9]{10}$/.test(formData.phone))
-      newErrors.phone = "Số điện thoại phải có 10 chữ số";
-
-    if (!formData.address) newErrors.address = "Vui lòng nhập địa chỉ";
-    if (!formData.city) newErrors.city = "Vui lòng chọn tỉnh/thành phố";
-    if (!formData.district) newErrors.district = "Vui lòng chọn quận/huyện";
-    if (!formData.ward) newErrors.ward = "Vui lòng chọn phường/xã";
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  // Thêm useEffect để lấy danh sách voucher
-  useEffect(() => {
-    const fetchVouchers = async () => {
-      try {
-        const response = await getSavedVouchers();
-        if (response.success) {
-          setVouchers(response.data || []);
-        }
-      } catch (error) {
-        console.error("Lỗi khi lấy danh sách voucher:", error);
-      }
-    };
-    fetchVouchers();
-  }, []);
-
-  const calculateSubtotal = useCallback(() => {
-    return cartItems.reduce((total, item) => {
-      if (!item || !item.product) return total;
-      const discount = item.product.discount || 0;
-      const price = item.product.price || item.price;
-      const discountedPrice = price * (1 - discount / 100);
-      return total + discountedPrice * item.quantity;
-    }, 0);
-  }, [cartItems]);
-
-  const calculateDiscountAmount = useCallback(() => {
-    if (!selectedVoucher) return 0;
-    const type = selectedVoucher.type || selectedVoucher.discountType;
-    const value = Number(
-      selectedVoucher.value || selectedVoucher.discountValue
-    );
-
-    // Lấy danh sách sản phẩm và danh mục áp dụng
-    const applicableProducts = selectedVoucher.applicableProducts || [];
-    const applicableCategories = selectedVoucher.applicableCategories || [];
-
-    // Tính tổng tiền các sản phẩm được áp dụng giảm giá
-    let eligibleTotal = 0;
-    if (applicableProducts.length > 0 || applicableCategories.length > 0) {
-      eligibleTotal = cartItems.reduce((total, item) => {
-        if (!item || !item.product) return total;
-        const productId = item.product._id || item.product;
-        const categoryId = item.product.category?._id || item.product.category;
-        const inProduct = applicableProducts.some(
-          (p) => p._id === productId || p === productId
-        );
-        const inCategory = applicableCategories.some(
-          (c) => c._id === categoryId || c === categoryId
-        );
-        if (inProduct || inCategory) {
-          const discount = item.product.discount || 0;
-          const price = item.product.price || item.price;
-          const discountedPrice = price * (1 - discount / 100);
-          return total + discountedPrice * item.quantity;
-        }
-        return total;
-      }, 0);
-    } else {
-      eligibleTotal = calculateSubtotal();
-    }
-
-    // Ép cứng maxDiscount = 80000 nếu là mã GIAMGIA50% để test
-    let maxDiscount = 0;
-    if (selectedVoucher.code === "GIAMGIA50%") {
-      maxDiscount = 80000;
-    } else if (
-      selectedVoucher.maxDiscountAmount !== undefined &&
-      selectedVoucher.maxDiscountAmount !== null &&
-      !isNaN(Number(selectedVoucher.maxDiscountAmount)) &&
-      Number(selectedVoucher.maxDiscountAmount) > 0
-    ) {
-      maxDiscount = Number(selectedVoucher.maxDiscountAmount);
-    } else if (
-      selectedVoucher.maxDiscount !== undefined &&
-      selectedVoucher.maxDiscount !== null &&
-      !isNaN(Number(selectedVoucher.maxDiscount)) &&
-      Number(selectedVoucher.maxDiscount) > 0
-    ) {
-      maxDiscount = Number(selectedVoucher.maxDiscount);
-    }
-
-    if (
-      selectedVoucher.minOrderValue &&
-      eligibleTotal < Number(selectedVoucher.minOrderValue)
-    ) {
-      return 0;
-    }
-    if (type === "PERCENTAGE") {
-      const percentDiscount = (eligibleTotal * value) / 100;
-      if (maxDiscount > 0) {
-        return Math.min(percentDiscount, maxDiscount);
-      }
-      return percentDiscount;
-    }
-    return value > 0 ? Math.min(value, eligibleTotal) : 0;
-  }, [cartItems, selectedVoucher, calculateSubtotal]);
-
-  useEffect(() => {
-    calculateDiscountAmount();
-    calculateSubtotal();
-  }, [calculateDiscountAmount, calculateSubtotal]);
-
-  // Sửa lại hàm handleSelectVoucher: kiểm tra sản phẩm/danh mục trước khi set
-  const handleSelectVoucher = (voucher) => {
-    // Kiểm tra nếu voucher có điều kiện sản phẩm/danh mục
-    const applicableProducts = voucher.applicableProducts || [];
-    const applicableCategories = voucher.applicableCategories || [];
-    let hasEligible = false;
-    if (applicableProducts.length > 0 || applicableCategories.length > 0) {
-      hasEligible = cartItems.some((item) => {
-        if (!item || !item.product) return false;
-        const productId = item.product._id || item.product;
-        const categoryId = item.product.category?._id || item.product.category;
-        const inProduct = applicableProducts.some(
-          (p) => p._id === productId || p === productId
-        );
-        const inCategory = applicableCategories.some(
-          (c) => c._id === categoryId || c === categoryId
-        );
-        return inProduct || inCategory;
-      });
-      if (!hasEligible) {
-        toast.error(
-          "Voucher này chỉ áp dụng cho một số sản phẩm/danh mục nhất định. Giỏ hàng của bạn hiện không có sản phẩm phù hợp."
-        );
-        setOpenVoucherDialog(false);
-        return;
-      }
-    }
-    setSelectedVoucher(voucher);
-    setOpenVoucherDialog(false);
-  };
-
-  // Hàm xử lý xóa voucher đã chọn
-  const handleRemoveVoucher = () => {
-    setSelectedVoucher(null);
-    setDiscountAmount(0);
-  };
-
-  // Thêm Dialog chọn voucher
-  const VoucherDialog = () => (
-    <Dialog
-      open={openVoucherDialog}
-      onClose={() => setOpenVoucherDialog(false)}
-      maxWidth="sm"
-      fullWidth
-    >
-      <DialogTitle>
-        <Box display="flex" alignItems="center">
-          <FaTicketAlt style={{ marginRight: 8 }} />
-          Chọn mã giảm giá
-        </Box>
-      </DialogTitle>
-      <DialogContent>
-        {/* Custom voucher card giống MyVoucher */}
-        <div className="voucher-list">
-          {vouchers.length === 0 ? (
-            <div>Bạn chưa có mã giảm giá nào</div>
-          ) : (
-            vouchers.map((voucher) => {
-              const total = calculateSubtotal();
-              let discount = 0;
-              let conditionText = "";
-              const type = voucher.type || voucher.discountType;
-              const value = voucher.value || voucher.discountValue;
-              // Lấy đúng trường maxDiscountAmount hoặc maxDiscount
-              const maxDiscount =
-                voucher.maxDiscountAmount || voucher.maxDiscount || 0;
-              // Kiểm tra điều kiện đơn tối thiểu
-              if (
-                voucher.minOrderValue &&
-                total < Number(voucher.minOrderValue)
-              ) {
-                conditionText = "Chưa đủ điều kiện";
-              } else {
-                if (type === "PERCENTAGE") {
-                  discount = (total * Number(value)) / 100;
-                  if (maxDiscount > 0) {
-                    discount = Math.min(discount, Number(maxDiscount));
-                  }
-                } else {
-                  discount = Number(value) || 0;
-                }
-                conditionText = `Giảm ${discount.toLocaleString("vi-VN", {
-                  style: "currency",
-                  currency: "VND",
-                })}`;
-              }
-              return (
-                <div
-                  className={`voucher-card-custom${
-                    selectedVoucher?._id === voucher._id ? " selected" : ""
-                  }${voucher.used ? " used" : ""}`}
-                  key={voucher._id}
-                  style={{
-                    backgroundImage: `url(${voucherImg})`,
-                    cursor: voucher.used
-                      ? "not-allowed"
-                      : voucher.minOrderValue &&
-                        total < Number(voucher.minOrderValue)
-                      ? "not-allowed"
-                      : "pointer",
-                    opacity: voucher.used
-                      ? 0.6
-                      : voucher.minOrderValue &&
-                        total < Number(voucher.minOrderValue)
-                      ? 0.6
-                      : 1,
-                    pointerEvents: voucher.used ? "none" : "auto",
-                    position: "relative",
-                  }}
-                  onClick={() => {
-                    if (
-                      !voucher.used &&
-                      !(
-                        voucher.minOrderValue &&
-                        total < Number(voucher.minOrderValue)
-                      )
-                    )
-                      handleSelectVoucher(voucher);
-                  }}
-                >
-                  {/* Ribbon Đã dùng */}
-                  {voucher.used && (
-                    <div
-                      style={{
-                        position: "absolute",
-                        top: 0,
-                        right: 0,
-                        background: "#bdbdbd",
-                        color: "#fff",
-                        fontWeight: 700,
-                        fontSize: 13,
-                        padding: "2px 16px",
-                        borderTopRightRadius: 12,
-                        borderBottomLeftRadius: 12,
-                        zIndex: 2,
-                        boxShadow: "0 2px 8px rgba(67,160,71,0.15)",
-                      }}
-                    >
-                      Đã sử dụng
-                    </div>
-                  )}
-                  <div className="voucher-left">
-                    <div className="voucher-shop-icon">
-                      <span role="img" aria-label="shop">
-                        🛍️
-                      </span>
-                    </div>
-                    <div className="voucher-shop-name">{voucher.name}</div>
-                    <div className="voucher-expiry">
-                      HSD: {new Date(voucher.endDate).toLocaleDateString()}
-                    </div>
-                  </div>
-                  <div className="voucher-right">
-                    <div className="voucher-discount">
-                      Giảm{" "}
-                      <span className="voucher-discount-value">
-                        {type === "PERCENTAGE"
-                          ? `${value}%${
-                              maxDiscount > 0
-                                ? ` (tối đa ${Number(
-                                    maxDiscount
-                                  ).toLocaleString("vi-VN")}đ)`
-                                : ""
-                            }`
-                          : `${Number(value).toLocaleString()}đ`}
-                      </span>
-                    </div>
-                    <div className="voucher-min-order">
-                      ĐH tối thiểu:{" "}
-                      {voucher.minOrderValue
-                        ? voucher.minOrderValue.toLocaleString() + "đ"
-                        : "Không"}
-                    </div>
-                    {voucher.description && (
-                      <div className="voucher-note">
-                        <b>Lưu ý:</b>{" "}
-                        {voucher.description.length > 40
-                          ? voucher.description.slice(0, 40) + "..."
-                          : voucher.description}
-                      </div>
-                    )}
-                    <div className="voucher-actions">
-                      {selectedVoucher?._id === voucher._id ? (
-                        <button
-                          className="voucher-btn-custom remove"
-                          onClick={handleRemoveVoucher}
-                        >
-                          Bỏ chọn
-                        </button>
-                      ) : (
-                        <button
-                          className="voucher-btn-custom"
-                          disabled={
-                            voucher.used ||
-                            (voucher.minOrderValue &&
-                              total < Number(voucher.minOrderValue))
-                          }
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            if (
-                              !voucher.used &&
-                              !(
-                                voucher.minOrderValue &&
-                                total < Number(voucher.minOrderValue)
-                              )
-                            )
-                              handleSelectVoucher(voucher);
-                          }}
-                        >
-                          {voucher.used ? "Đã sử dụng" : "Áp dụng"}
-                        </button>
-                      )}
-                    </div>
-                    <div
-                      className="voucher-condition"
-                      style={{
-                        color:
-                          voucher.minOrderValue &&
-                          total < Number(voucher.minOrderValue)
-                            ? "red"
-                            : "#43a047",
-                        fontWeight: 500,
-                        marginTop: 4,
-                      }}
-                    >
-                      {conditionText}
-                    </div>
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={() => setOpenVoucherDialog(false)}>Đóng</Button>
-      </DialogActions>
-    </Dialog>
-  );
-
-  // Handle form submission
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-    setError(null);
-
-    try {
-      if (!validateForm()) {
-        setIsSubmitting(false);
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+        context.setUser(updatedUser);
+        setShowSuccess(true);
+        setIsEditing(false);
         return;
       }
 
-      // Kiểm tra dữ liệu trước khi gửi
-      if (!user?._id) {
-        throw new Error("Không tìm thấy thông tin người dùng");
-      }
-
-      if (!cartItems || cartItems.length === 0) {
-        throw new Error("Giỏ hàng trống");
-      }
-
-      const totalAmount = calculateSubtotal();
-      if (totalAmount <= 0) {
-        throw new Error("Tổng tiền không hợp lệ");
-      }
-
-      // Chuẩn bị dữ liệu đơn hàng
-      if (selectedVoucher && selectedVoucher.used) {
-        toast.error("Voucher này đã được sử dụng, vui lòng chọn voucher khác!");
-        setIsSubmitting(false);
+      // Xử lý cho user thông thường
+      const token = localStorage.getItem("token");
+      if (!token) {
+        context.setIsLogin(false);
+        navigate("/signin");
         return;
       }
 
-      if (paymentMethod === "VNPAY") {
-        try {
-          const vnpayPayload = {
-            amount: calculateSubtotal() - (discountAmount || 0),
-            items: cartItems.map((item) => ({
-              product: item.product._id,
-              quantity: item.quantity,
-              price: item.price,
-              name: item.product.name,
-              image:
-                item.product.image ||
-                (item.product.images && item.product.images[0]) ||
-                "",
-            })),
-            shippingAddress: {
-              fullName: formData.fullName,
-              phone: formData.phone,
-              address: formData.address,
-              city: formData.cityName,
-              district: formData.districtName,
-              ward: formData.wardName,
-            },
-            note: note || "",
-          };
-          const vnpayRes = await createVnpayPayment(vnpayPayload);
-          if (vnpayRes.success && vnpayRes.paymentUrl) {
-            localStorage.setItem("orderId", vnpayRes.orderId);
-            localStorage.setItem("isReturningFromPayment", "true");
-            window.location.href = vnpayRes.paymentUrl;
-            return;
-          } else {
-            toast.error("Không thể tạo thanh toán VNPAY");
-            setIsSubmitting(false);
-            return;
-          }
-        } catch (error) {
-          toast.error("Lỗi khi tạo thanh toán VNPAY");
-          setIsSubmitting(false);
-          return;
-        }
-      }
-
-      const orderPayload = {
-        userId: user._id,
-        items: cartItems.map((item) => ({
-          product: item.product._id,
-          quantity: item.quantity,
-          price: item.price,
-          name: item.product.name,
-          image:
-            item.product.image ||
-            (item.product.images && item.product.images[0]) ||
-            "",
-        })),
-        totalAmount: calculateSubtotal(),
-        shippingAddress: {
-          fullName: formData.fullName,
-          phone: formData.phone,
-          address: formData.address,
-          city: formData.cityName,
-          district: formData.districtName,
-          ward: formData.wardName,
-        },
-        note: note || "",
-        paymentMethod: paymentMethod,
-        voucher: selectedVoucher?._id,
-        discountAmount: discountAmount,
-        finalAmount: (calculateSubtotal() || 0) - (discountAmount || 0),
+      const updatedUser = await updateUserProfile(formData);
+      const formattedUser = {
+        ...updatedUser,
+        name: updatedUser.name || "",
+        email: updatedUser.email || "",
+        phone: updatedUser.phone || "",
       };
 
-      // If payment method is MoMo, proceed with MoMo payment
-      if (paymentMethod === "MOMO") {
-        await handleMomoPayment();
+      context.setUser(formattedUser);
+      localStorage.setItem("user", JSON.stringify(formattedUser));
+      setShowSuccess(true);
+      setIsEditing(false);
+    } catch (err) {
+      console.error("Lỗi khi cập nhật:", err);
+      if (
+        err.response?.status === 401 ||
+        err.message === "Không tìm thấy token"
+      ) {
+        localStorage.removeItem("token");
+        context.setIsLogin(false);
+        navigate("/signin");
       } else {
-        // For COD, create order directly
-        try {
-          const orderResponse = await axios.post("/api/orders", orderPayload, {
-            headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`,
-            },
-          });
-
-          if (orderResponse.data.success) {
-            toast.success("Đặt hàng thành công!");
-            navigate("/thank-you", {
-              state: {
-                order: orderResponse.data.data,
-                message: "Đơn hàng của bạn đã được đặt thành công!",
-              },
-            });
-          } else {
-            throw new Error("Không thể tạo đơn hàng");
-          }
-        } catch (error) {
-          console.error("Lỗi khi tạo đơn hàng:", error);
-          setError(error.response?.data?.message || "Lỗi khi tạo đơn hàng");
-          toast.error(error.response?.data?.message || "Lỗi khi tạo đơn hàng");
-        }
+        setError(
+          err.response?.data?.message || "Cập nhật thất bại. Vui lòng thử lại."
+        );
       }
-    } catch (error) {
-      console.error("Error in checkout process:", error);
-      setError(error.message || "Có lỗi xảy ra khi xử lý đơn hàng");
-      toast.error(error.message || "Có lỗi xảy ra khi xử lý đơn hàng");
     } finally {
-      setIsSubmitting(false);
+      setLoading(false);
     }
   };
-
-  const handleMomoPayment = async () => {
-    try {
-      const orderData = {
-        items: cartItems.map((item) => ({
-          productId: item.product._id,
-          quantity: item.quantity,
-          price: item.price,
-          name: item.product.name,
-          image: item.product.images?.[0] || "",
-          description: item.product.description,
-        })),
-        totalAmount: calculateSubtotal(),
-        finalAmount: calculateSubtotal() - (discountAmount || 0),
-        userId: user._id,
-        shippingAddress: {
-          fullName: formData.fullName,
-          phone: formData.phone,
-          address: formData.address,
-          city: formData.cityName,
-          district: formData.districtName,
-          ward: formData.wardName,
-        },
-        note: note,
-        paymentMethod: "MOMO",
-        voucher: selectedVoucher?._id,
-        discountAmount: discountAmount || 0,
-      };
-
-      const response = await axios.post(
-        "/api/momo/create",
-        { orderData },
-        {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          baseURL: "http://localhost:4000",
-        }
-      );
-
-      if (response.data.success) {
-        setOrderId(response.data.data.momoOrderId);
-        setPaymentMethod("MOMO");
-        window.location.href = response.data.data.payUrl;
-      } else {
-        toast.error(response.data.message || "Lỗi khi tạo thanh toán");
-      }
-    } catch (error) {
-      console.error("Error in handleMomoPayment:", error);
-      toast.error(
-        error.response?.data?.message || "Lỗi khi tạo thanh toán MoMo"
-      );
-    }
-  };
-
-  const checkPaymentStatus = useCallback(async () => {
-    try {
-      // Kiểm tra nếu không có orderId hoặc paymentMethod thì không thực hiện
-      if (!orderId || !paymentMethod) {
-        return false;
-      }
-
-      console.log("Checking payment status for order:", orderId);
-      let response;
-
-      if (paymentMethod === "MOMO") {
-        response = await axios.get(`/api/momo/status/${orderId}`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          baseURL: "http://localhost:4000",
-        });
-      } else if (paymentMethod === "VNPAY") {
-        response = await axios.get(`/api/orders/${orderId}/status`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-          baseURL: "http://localhost:4000",
-        });
-      }
-
-      if (response && response.data && response.data.success) {
-        if (response.data.data.status === "SUCCESS") {
-          toast.success("Thanh toán thành công!");
-          navigate(`/orders/${orderId}`);
-          return true;
-        } else if (response.data.data.status === "FAILED") {
-          toast.error("Thanh toán thất bại!");
-          return true;
-        }
-      }
-      return false;
-    } catch (error) {
-      console.error("Lỗi khi kiểm tra trạng thái thanh toán:", error);
-      return false;
-    }
-  }, [orderId, paymentMethod, navigate]);
-
-  useEffect(() => {
-    checkPaymentStatus();
-  }, [checkPaymentStatus]);
-
-  if (loading) {
-    return (
-      <Container maxWidth="lg" sx={{ py: 4, textAlign: "center" }}>
-        <CircularProgress />
-        <Typography variant="body1" sx={{ mt: 2 }}>
-          Đang tải thông tin...
-        </Typography>
-      </Container>
-    );
-  }
 
   return (
-    <Container maxWidth="lg" sx={{ py: 4 }}>
-      <Typography variant="h4" gutterBottom>
-        Thanh toán
-      </Typography>
+    <Box
+      sx={{
+        py: 6,
+        backgroundColor: "#fff",
+        minHeight: "calc(100vh - 200px)",
+      }}
+    >
+      <Container maxWidth="md" s={{ backgroundColor: "white" }}>
+        <Box sx={{ mb: 4 }}>
+          <Typography
+            variant="h4"
+            component="h1"
+            fontWeight="700"
+            sx={{
+              color: "#00aaff",
+              mb: 1,
+              textAlign: { xs: "center", md: "left" },
+            }}
+          >
+            Hồ sơ cá nhân
+          </Typography>
+          <Typography
+            variant="body1"
+            color="text.secondary"
+            sx={{
+              textAlign: { xs: "center", md: "left" },
+            }}
+          >
+            Quản lý thông tin cá nhân của bạn
+          </Typography>
+        </Box>
 
-      {error && (
-        <Alert severity="error" sx={{ mb: 3 }}>
-          {error}
-        </Alert>
-      )}
+        {/* Thẻ thông tin cá nhân */}
+        <Card
+          elevation={3}
+          sx={{
+            borderRadius: 3,
+            mb: 4,
+            overflow: "visible",
+            position: "relative",
+            backgroundColor: "white",
+          }}
+        >
+          {/* Phần header với avatar và action buttons */}
+          <Box
+            sx={{
+              p: { xs: 2, md: 4 },
+              pb: { xs: 2, md: 2 },
+              display: "flex",
+              flexDirection: { xs: "column", sm: "row" },
+              alignItems: { xs: "center", sm: "flex-start" },
+              gap: 3,
+              position: "relative",
+            }}
+          >
+            {/* Avatar lớn */}
+            <Avatar
+              sx={{
+                width: 100,
+                height: 100,
+                bgcolor: avatarColor,
+                fontSize: 36,
+                fontWeight: "bold",
+                boxShadow: "0 4px 12px rgba(0,0,0,0.15)",
+              }}
+            >
+              {getInitials(formData.name)}
+            </Avatar>
 
-      <Grid container spacing={4}>
-        {/* Shipping Information */}
-        <Grid item xs={12} md={8}>
-          <Paper sx={{ p: 3, mb: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              <IoLocationSharp /> Thông tin giao hàng
-            </Typography>
-            <Box component="form" onSubmit={handleSubmit} noValidate>
-              <Grid container spacing={2}>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Họ tên"
-                    name="fullName"
-                    value={formData.fullName}
-                    onChange={handleChange}
-                    error={!!errors.fullName}
-                    helperText={errors.fullName}
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Số điện thoại"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleChange}
-                    error={!!errors.phone}
-                    helperText={errors.phone}
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12}>
-                  <TextField
-                    fullWidth
-                    label="Địa chỉ"
-                    name="address"
-                    value={formData.address}
-                    onChange={handleChange}
-                    error={!!errors.address}
-                    helperText={errors.address}
-                    required
-                  />
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth>
-                    <TextField
-                      select
-                      fullWidth
-                      label="Tỉnh/Thành phố"
-                      name="city"
-                      value={formData.city}
-                      onChange={handleProvinceChange}
-                      error={!!errors.city}
-                      helperText={errors.city}
-                      required
-                    >
-                      <MenuItem value="">Chọn tỉnh/thành phố</MenuItem>
-                      {provinces.map((province) => (
-                        <MenuItem key={province.code} value={province.code}>
-                          {province.name}
-                        </MenuItem>
-                      ))}
-                    </TextField>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12} sm={6}>
-                  <FormControl fullWidth>
-                    <TextField
-                      select
-                      fullWidth
-                      label="Quận/Huyện"
-                      name="district"
-                      value={formData.district}
-                      onChange={handleDistrictChange}
-                      error={!!errors.district}
-                      helperText={errors.district}
-                      disabled={!formData.city}
-                      required
-                    >
-                      <MenuItem value="">Chọn quận/huyện</MenuItem>
-                      {districts.map((district) => (
-                        <MenuItem key={district.code} value={district.code}>
-                          {district.name}
-                        </MenuItem>
-                      ))}
-                    </TextField>
-                  </FormControl>
-                </Grid>
-                <Grid item xs={12}>
-                  <FormControl fullWidth>
-                    <TextField
-                      select
-                      fullWidth
-                      label="Phường/Xã"
-                      name="ward"
-                      value={formData.ward}
-                      onChange={handleWardChange}
-                      error={!!errors.ward}
-                      helperText={errors.ward}
-                      disabled={!formData.district}
-                      required
-                    >
-                      <MenuItem value="">Chọn phường/xã</MenuItem>
-                      {wards.map((ward) => (
-                        <MenuItem key={ward.code} value={ward.code}>
-                          {ward.name}
-                        </MenuItem>
-                      ))}
-                    </TextField>
-                  </FormControl>
-                </Grid>
-                <Box sx={{ mt: 4, width: "100%" }}>
-                  <Typography
-                    variant="h6"
-                    gutterBottom
-                    sx={{
-                      display: "flex",
-                      alignItems: "center",
-                      color: "#1a237e",
-                      fontWeight: 600,
-                      mb: 3,
-                    }}
-                  >
-                    <IoCardSharp style={{ marginRight: 8 }} />
-                    Phương thức thanh toán
-                  </Typography>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={4}>
-                      <Card
-                        sx={{
-                          cursor: "pointer",
-                          border:
-                            paymentMethod === "COD"
-                              ? "2px solid #1a237e"
-                              : "1px solid #e0e0e0",
-                          borderRadius: 2,
-                          transition: "all 0.3s ease",
-                          "&:hover": {
-                            borderColor: "#1a237e",
-                            transform: "translateY(-2px)",
-                            boxShadow: "0 4px 12px rgba(26,35,126,0.15)",
-                          },
-                          height: "100%",
-                          display: "flex",
-                          flexDirection: "column",
-                          position: "relative",
-                          overflow: "visible",
-                        }}
-                        onClick={() => setPaymentMethod("COD")}
-                      >
-                        {paymentMethod === "COD" && (
-                          <Box
-                            sx={{
-                              position: "absolute",
-                              top: -10,
-                              right: -10,
-                              width: 24,
-                              height: 24,
-                              borderRadius: "50%",
-                              bgcolor: "#1a237e",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              color: "white",
-                              boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-                            }}
-                          >
-                            ✓
-                          </Box>
-                        )}
-                        <CardContent sx={{ flexGrow: 1, p: 2 }}>
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              mb: 2,
-                            }}
-                          >
-                            <Box
-                              sx={{
-                                width: 40,
-                                height: 40,
-                                borderRadius: "50%",
-                                bgcolor:
-                                  paymentMethod === "COD"
-                                    ? "#1a237e"
-                                    : "#f5f5f5",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                mr: 2,
-                                transition: "all 0.3s ease",
-                              }}
-                            >
-                              <FaMoneyBillWave
-                                size={20}
-                                color={
-                                  paymentMethod === "COD" ? "#fff" : "#666"
-                                }
-                              />
-                            </Box>
-                            <Typography
-                              variant="h6"
-                              sx={{
-                                color:
-                                  paymentMethod === "COD"
-                                    ? "#1a237e"
-                                    : "inherit",
-                                fontWeight: 600,
-                              }}
-                            >
-                              COD
-                            </Typography>
-                          </Box>
-                          <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            sx={{ pl: 7 }}
-                          >
-                            Thanh toán khi nhận hàng
-                          </Typography>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                    <Grid item xs={12} sm={4}>
-                      <Card
-                        sx={{
-                          cursor: "pointer",
-                          border:
-                            paymentMethod === "MOMO"
-                              ? "2px solid #d81b60"
-                              : "1px solid #e0e0e0",
-                          borderRadius: 2,
-                          transition: "all 0.3s ease",
-                          "&:hover": {
-                            borderColor: "#d81b60",
-                            transform: "translateY(-2px)",
-                            boxShadow: "0 4px 12px rgba(216,27,96,0.15)",
-                          },
-                          height: "100%",
-                          display: "flex",
-                          flexDirection: "column",
-                          position: "relative",
-                          overflow: "visible",
-                        }}
-                        onClick={() => setPaymentMethod("MOMO")}
-                      >
-                        {paymentMethod === "MOMO" && (
-                          <Box
-                            sx={{
-                              position: "absolute",
-                              top: -10,
-                              right: -10,
-                              width: 24,
-                              height: 24,
-                              borderRadius: "50%",
-                              bgcolor: "#d81b60",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              color: "white",
-                              boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-                            }}
-                          >
-                            ✓
-                          </Box>
-                        )}
-                        <CardContent sx={{ flexGrow: 1, p: 2 }}>
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              mb: 2,
-                            }}
-                          >
-                            <Box
-                              sx={{
-                                width: 40,
-                                height: 40,
-                                borderRadius: "50%",
-                                bgcolor:
-                                  paymentMethod === "MOMO"
-                                    ? "#d81b60"
-                                    : "#f5f5f5",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                mr: 2,
-                                transition: "all 0.3s ease",
-                              }}
-                            >
-                              <FaWallet
-                                size={20}
-                                color={
-                                  paymentMethod === "MOMO" ? "#fff" : "#666"
-                                }
-                              />
-                            </Box>
-                            <Typography
-                              variant="h6"
-                              sx={{
-                                color:
-                                  paymentMethod === "MOMO"
-                                    ? "#d81b60"
-                                    : "inherit",
-                                fontWeight: 600,
-                              }}
-                            >
-                              MoMo
-                            </Typography>
-                          </Box>
-                          <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            sx={{ pl: 7 }}
-                          >
-                            Thanh toán qua ví MoMo
-                          </Typography>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                    <Grid item xs={12} sm={4}>
-                      <Card
-                        sx={{
-                          cursor: "pointer",
-                          border:
-                            paymentMethod === "VNPAY"
-                              ? "2px solid #0055a4"
-                              : "1px solid #e0e0e0",
-                          borderRadius: 2,
-                          transition: "all 0.3s ease",
-                          "&:hover": {
-                            borderColor: "#0055a4",
-                            transform: "translateY(-2px)",
-                            boxShadow: "0 4px 12px rgba(0,85,164,0.15)",
-                          },
-                          height: "100%",
-                          display: "flex",
-                          flexDirection: "column",
-                          position: "relative",
-                          overflow: "visible",
-                        }}
-                        onClick={() => setPaymentMethod("VNPAY")}
-                      >
-                        {paymentMethod === "VNPAY" && (
-                          <Box
-                            sx={{
-                              position: "absolute",
-                              top: -10,
-                              right: -10,
-                              width: 24,
-                              height: 24,
-                              borderRadius: "50%",
-                              bgcolor: "#0055a4",
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              color: "white",
-                              boxShadow: "0 2px 4px rgba(0,0,0,0.2)",
-                            }}
-                          >
-                            ✓
-                          </Box>
-                        )}
-                        <CardContent sx={{ flexGrow: 1, p: 2 }}>
-                          <Box
-                            sx={{
-                              display: "flex",
-                              alignItems: "center",
-                              mb: 2,
-                            }}
-                          >
-                            <Box
-                              sx={{
-                                width: 40,
-                                height: 40,
-                                borderRadius: "50%",
-                                bgcolor:
-                                  paymentMethod === "VNPAY"
-                                    ? "#0055a4"
-                                    : "#f5f5f5",
-                                display: "flex",
-                                alignItems: "center",
-                                justifyContent: "center",
-                                mr: 2,
-                                transition: "all 0.3s ease",
-                              }}
-                            >
-                              <MdCreditCard
-                                size={22}
-                                color={
-                                  paymentMethod === "VNPAY" ? "#fff" : "#666"
-                                }
-                              />
-                            </Box>
-                            <Typography
-                              variant="h6"
-                              sx={{
-                                color:
-                                  paymentMethod === "VNPAY"
-                                    ? "#0055a4"
-                                    : "inherit",
-                                fontWeight: 600,
-                              }}
-                            >
-                              VNPAY
-                            </Typography>
-                          </Box>
-                          <Typography
-                            variant="body2"
-                            color="text.secondary"
-                            sx={{ pl: 7 }}
-                          >
-                            Thanh toán qua cổng VNPAY
-                          </Typography>
-                        </CardContent>
-                      </Card>
-                    </Grid>
-                  </Grid>
-                </Box>
-                <Box sx={{ mt: 4, width: "100%" }}>
-                  <Typography variant="h6" gutterBottom>
-                    <IoCardSharp /> Ghi chú đơn hàng
-                  </Typography>
-                  <Paper
-                    elevation={0}
-                    sx={{
-                      p: 2,
-                      backgroundColor: "#f8f9fa",
-                      border: "1px solid #e0e0e0",
-                      borderRadius: 2,
-                    }}
-                  >
-                    <TextField
-                      fullWidth
-                      multiline
-                      rows={4}
-                      value={note}
-                      onChange={(e) => setNote(e.target.value)}
-                      placeholder="Ví dụ: Giao hàng trong giờ hành chính, gọi điện trước khi giao,..."
-                      variant="outlined"
-                      sx={{
-                        "& .MuiOutlinedInput-root": {
-                          backgroundColor: "white",
-                          "&:hover fieldset": {
-                            borderColor: "#00aaff",
-                          },
-                          "&.Mui-focused fieldset": {
-                            borderColor: "#00aaff",
-                          },
-                        },
-                      }}
-                    />
-                    <Typography
-                      variant="caption"
-                      sx={{
-                        display: "block",
-                        mt: 1,
-                        color: "text.secondary",
-                        fontStyle: "italic",
-                      }}
-                    >
-                      * Thêm ghi chú để chúng tôi phục vụ bạn tốt hơn
-                    </Typography>
-                  </Paper>
-                </Box>
-              </Grid>
-              <Box sx={{ mt: 4 }}>
-                <Button
-                  type="submit"
-                  variant="contained"
-                  color="primary"
-                  size="large"
-                  fullWidth
-                  disabled={isSubmitting}
-                  style={{ backgroundColor: "#00aaff" }}
-                >
-                  {isSubmitting ? (
-                    <>
-                      <CircularProgress
-                        size={24}
-                        sx={{ mr: 1, color: "white" }}
-                      />
-                      Đang xử lý...
-                    </>
-                  ) : (
-                    "Đặt hàng"
-                  )}
-                </Button>
-              </Box>
-            </Box>
-          </Paper>
-        </Grid>
-
-        {/* Order Summary */}
-        <Grid item xs={12} md={4}>
-          <Paper sx={{ p: 3 }}>
-            <Typography variant="h6" gutterBottom>
-              Tóm tắt đơn hàng
-            </Typography>
-            <Divider sx={{ my: 2 }} />
-            {cartItems.map((item) => (
-              <Box key={item.product._id} sx={{ mb: 2 }}>
-                <Grid container spacing={2}>
-                  <Grid item xs={3}>
-                    <img
-                      src={item.product.images?.[0] || ""}
-                      alt={item.product.name}
-                      style={{ width: "100%", borderRadius: "4px" }}
-                    />
-                  </Grid>
-                  <Grid item xs={9}>
-                    <Typography variant="subtitle1">
-                      {item.product.name}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Số lượng: {item.quantity}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Giá:{" "}
-                      {item.product.discount > 0 ? (
-                        <>
-                          <span
-                            style={{
-                              textDecoration: "line-through",
-                              color: "#888",
-                              marginRight: 4,
-                            }}
-                          >
-                            {item.product.price.toLocaleString("vi-VN", {
-                              style: "currency",
-                              currency: "VND",
-                            })}
-                          </span>
-                          <span style={{ color: "#ed174a", fontWeight: 600 }}>
-                            {(
-                              item.product.price *
-                              (1 - item.product.discount / 100)
-                            ).toLocaleString("vi-VN", {
-                              style: "currency",
-                              currency: "VND",
-                            })}
-                          </span>
-                        </>
-                      ) : (
-                        <span>
-                          {item.product.price.toLocaleString("vi-VN", {
-                            style: "currency",
-                            currency: "VND",
-                          })}
-                        </span>
-                      )}
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      Thành tiền:{" "}
-                      {(item.product.discount > 0
-                        ? item.product.price *
-                          (1 - item.product.discount / 100) *
-                          item.quantity
-                        : item.product.price * item.quantity
-                      ).toLocaleString("vi-VN", {
-                        style: "currency",
-                        currency: "VND",
-                      })}
-                    </Typography>
-                  </Grid>
-                </Grid>
-              </Box>
-            ))}
-            <Divider sx={{ my: 2 }} />
-
-            {/* Voucher Section */}
-            <Box sx={{ mb: 2 }}>
-              <Typography variant="subtitle1" gutterBottom>
-                Mã giảm giá
+            <Box
+              sx={{
+                display: "flex",
+                flexDirection: "column",
+                flex: 1,
+                alignItems: { xs: "center", sm: "flex-start" },
+              }}
+            >
+              <Typography
+                variant="h5"
+                component="h2"
+                fontWeight="bold"
+                sx={{ mb: 0.5 }}
+              >
+                {formData.name || "Chưa cập nhật tên"}
               </Typography>
-              {selectedVoucher ? (
+
+              <Box
+                sx={{
+                  display: "flex",
+                  alignItems: "center",
+                  mb: 1,
+                  flexWrap: "wrap",
+                  justifyContent: { xs: "center", sm: "flex-start" },
+                }}
+              >
                 <Box
                   sx={{
                     display: "flex",
                     alignItems: "center",
-                    justifyContent: "space-between",
-                    background: "#e0f7fa",
-                    border: "2px solid #00bcd4",
-                    borderRadius: 2,
-                    p: 2,
-                    boxShadow: "0 2px 8px rgba(0,188,212,0.12)",
-                    mb: 1,
-                    position: "relative",
+                    mr: 2,
+                    color: "text.secondary",
                   }}
                 >
-                  <Box sx={{ display: "flex", alignItems: "center" }}>
-                    <FaTicketAlt
-                      color="#00bcd4"
-                      style={{ marginRight: 8, fontSize: 22 }}
-                    />
-                    <Box>
-                      <Typography
-                        variant="body1"
-                        sx={{ fontWeight: 700, color: "#00bcd4", fontSize: 18 }}
-                      >
-                        {selectedVoucher.code}
-                        <span
-                          style={{
-                            background: "#00bcd4",
-                            color: "#fff",
-                            borderRadius: 6,
-                            fontSize: 12,
-                            fontWeight: 600,
-                            padding: "2px 8px",
-                            marginLeft: 10,
-                            verticalAlign: "middle",
-                          }}
-                        >
-                          Đã áp dụng
-                        </span>
-                      </Typography>
-                      <Typography
-                        variant="caption"
-                        sx={{
-                          color: "#0097a7",
-                          fontWeight: 500,
-                          fontSize: 15,
-                          display: "block",
-                        }}
-                      >
-                        {discountAmount > 0
-                          ? `Giảm ${discountAmount.toLocaleString("vi-VN", {
-                              style: "currency",
-                              currency: "VND",
-                            })}`
-                          : selectedVoucher &&
-                            (selectedVoucher.applicableProducts?.length > 0 ||
-                              selectedVoucher.applicableCategories?.length > 0)
-                          ? "Voucher này chỉ áp dụng cho một số sản phẩm/danh mục nhất định. Giỏ hàng của bạn hiện không có sản phẩm phù hợp."
-                          : "Không có giảm giá"}
-                      </Typography>
-                    </Box>
-                  </Box>
-                  {/* Badge Xóa voucher */}
+                  <EmailIcon />
+                  <Typography variant="body2" sx={{ ml: 1 }}>
+                    {formData.email || "Chưa cập nhật email"}
+                  </Typography>
+                </Box>
+
+                {formData.phone && (
                   <Box
                     sx={{
-                      position: "absolute",
-                      top: 8,
-                      right: 8,
-                      zIndex: 2,
+                      display: "flex",
+                      alignItems: "center",
+                      color: "text.secondary",
                     }}
                   >
-                    <IconButton
-                      size="small"
-                      onClick={handleRemoveVoucher}
-                      sx={{
-                        background: "#ff1744",
-                        color: "#fff",
-                        p: 0.5,
-                        "&:hover": {
-                          background: "#d50000",
-                        },
-                        boxShadow: "0 2px 8px rgba(255,23,68,0.15)",
-                      }}
-                    >
-                      <svg
-                        width="18"
-                        height="18"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                      >
-                        <path
-                          d="M3 6h18"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                        />
-                        <path
-                          d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        />
-                        <rect
-                          x="5"
-                          y="6"
-                          width="14"
-                          height="14"
-                          rx="2"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                        />
-                        <path
-                          d="M10 11v4"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                        />
-                        <path
-                          d="M14 11v4"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                        />
-                      </svg>
-                    </IconButton>
+                    <PhoneIcon />
+                    <Typography variant="body2" sx={{ ml: 1 }}>
+                      {formData.phone}
+                    </Typography>
                   </Box>
-                </Box>
-              ) : (
-                <Button
-                  startIcon={
-                    <FaTicketAlt style={{ fontSize: 22, color: "#00bcd4" }} />
-                  }
-                  onClick={() => setOpenVoucherDialog(true)}
+                )}
+              </Box>
+
+              {isGoogleUser && (
+                <Chip
+                  icon={<GoogleIcon />}
+                  label="Tài khoản Google"
+                  size="small"
+                  color="primary"
                   variant="outlined"
-                  fullWidth
-                  sx={{
-                    borderRadius: 3,
-                    border: "2px solid #00bcd4",
-                    background: "#fff",
-                    color: "#00bcd4",
-                    fontWeight: 700,
-                    fontSize: 17,
-                    py: 1.2,
-                    boxShadow: "0 2px 8px rgba(0,188,212,0.08)",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    transition: "all 0.2s",
-                    "&:hover": {
-                      background: "#e0f7fa",
-                      borderColor: "#0097a7",
-                      color: "#0097a7",
-                      boxShadow: "0 4px 16px rgba(0,188,212,0.15)",
-                    },
-                    "&:active": {
-                      background: "#b2ebf2",
-                      borderColor: "#00bcd4",
-                    },
-                  }}
-                >
-                  Chọn Mã Giảm Giá
-                </Button>
+                  sx={{ mb: 1 }}
+                />
               )}
             </Box>
 
-            <Divider sx={{ my: 2 }} />
-
-            {/* Total Section */}
-            <Box
-              sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
-            >
-              <Typography variant="body1">Tạm tính:</Typography>
-              <Typography variant="body1">
-                {(calculateSubtotal() || 0).toLocaleString("vi-VN", {
-                  style: "currency",
-                  currency: "VND",
-                })}
-              </Typography>
-            </Box>
-
-            {discountAmount > 0 && (
-              <Box
-                sx={{ display: "flex", justifyContent: "space-between", mb: 1 }}
+            {/* Nút chỉnh sửa */}
+            {!isEditing ? (
+              <Button
+                variant="contained"
+                color="primary"
+                startIcon={<EditIcon />}
+                onClick={() => setIsEditing(true)}
+                disabled={loading}
+                sx={{
+                  borderRadius: 2,
+                  alignSelf: { xs: "center", sm: "flex-start" },
+                  boxShadow: 2,
+                }}
               >
-                <Typography variant="body1" color="error">
-                  Giảm giá:
-                </Typography>
-                <Typography variant="body1" color="error">
-                  -
-                  {(discountAmount || 0).toLocaleString("vi-VN", {
-                    style: "currency",
-                    currency: "VND",
-                  })}
-                </Typography>
+                Chỉnh sửa
+              </Button>
+            ) : (
+              <Box
+                sx={{
+                  display: "flex",
+                  gap: 1,
+                  position: { xs: "static", sm: "absolute" },
+                  right: { sm: 24 },
+                  alignSelf: "center",
+                }}
+              >
+                <Tooltip title="Hủy">
+                  <IconButton
+                    color="error"
+                    onClick={() => {
+                      setIsEditing(false);
+                      setValidationErrors({});
+                      fetchUserProfile();
+                    }}
+                    disabled={loading}
+                    sx={{ boxShadow: 1 }}
+                  >
+                    <CancelIcon />
+                  </IconButton>
+                </Tooltip>
+
+                <Tooltip title="Lưu thay đổi">
+                  <IconButton
+                    color="primary"
+                    onClick={handleSubmit}
+                    disabled={loading}
+                    sx={{ boxShadow: 1 }}
+                  >
+                    <SaveIcon />
+                  </IconButton>
+                </Tooltip>
               </Box>
             )}
+          </Box>
 
-            <Box
-              sx={{ display: "flex", justifyContent: "space-between", mb: 2 }}
-            >
-              <Typography variant="h6">Tổng cộng:</Typography>
-              <Typography variant="h6" color="red">
-                {(
-                  (calculateSubtotal() || 0) - (discountAmount || 0)
-                ).toLocaleString("vi-VN", {
-                  style: "currency",
-                  currency: "VND",
-                })}
-              </Typography>
+          <Divider sx={{ mx: 3 }} />
+
+          {/* Phần form */}
+          <CardContent sx={{ p: { xs: 2, md: 4 }, pt: 3 }}>
+            {error && (
+              <Alert severity="error" sx={{ mb: 3 }}>
+                {error}
+              </Alert>
+            )}
+
+            {isGoogleUser && (
+              <Alert
+                severity="info"
+                sx={{
+                  mb: 3,
+                  borderRadius: 2,
+                  "& .MuiAlert-icon": { alignSelf: "center" },
+                }}
+              >
+                Bạn đang sử dụng tài khoản Google. Một số thông tin có thể bị
+                giới hạn chỉnh sửa.
+              </Alert>
+            )}
+
+            <Box component="form" noValidate>
+              <Grid container spacing={3}>
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    required
+                    id="name"
+                    label="Họ và tên"
+                    name="name"
+                    value={formData.name || ""}
+                    onChange={handleChange}
+                    variant="outlined"
+                    error={!!validationErrors.name}
+                    helperText={validationErrors.name}
+                    disabled={!isEditing}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <UserIcon />
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: 2,
+                      },
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    id="email"
+                    label="Email"
+                    name="email"
+                    value={formData.email || ""}
+                    onChange={handleChange}
+                    variant="outlined"
+                    disabled={true} // Email luôn bị vô hiệu hóa chỉnh sửa
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <EmailIcon />
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: 2,
+                      },
+                    }}
+                  />
+                </Grid>
+
+                <Grid item xs={12}>
+                  <TextField
+                    fullWidth
+                    required
+                    id="phone"
+                    label="Số điện thoại"
+                    name="phone"
+                    value={formData.phone || ""}
+                    onChange={handleChange}
+                    variant="outlined"
+                    error={!!validationErrors.phone}
+                    helperText={validationErrors.phone}
+                    disabled={!isEditing}
+                    InputProps={{
+                      startAdornment: (
+                        <InputAdornment position="start">
+                          <PhoneIcon />
+                        </InputAdornment>
+                      ),
+                    }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        borderRadius: 2,
+                      },
+                    }}
+                  />
+                </Grid>
+
+                {isEditing && !isGoogleUser && (
+                  <Grid item xs={12}>
+                    <Button
+                      variant="outlined"
+                      color="secondary"
+                      onClick={() => navigate("/change-password")}
+                      disabled={loading}
+                      startIcon={<LockIcon />}
+                      sx={{
+                        borderRadius: 2,
+                        textTransform: "none",
+                      }}
+                    >
+                      Đổi mật khẩu
+                    </Button>
+                  </Grid>
+                )}
+
+                {isEditing && isMobile && (
+                  <Grid item xs={12}>
+                    <Box sx={{ display: "flex", gap: 2, mt: 2 }}>
+                      <Button
+                        fullWidth
+                        variant="outlined"
+                        color="error"
+                        onClick={() => {
+                          setIsEditing(false);
+                          setValidationErrors({});
+                          fetchUserProfile();
+                        }}
+                        disabled={loading}
+                        startIcon={<CancelIcon />}
+                        sx={{ borderRadius: 2 }}
+                      >
+                        Hủy
+                      </Button>
+
+                      <Button
+                        fullWidth
+                        type="button"
+                        variant="contained"
+                        color="primary"
+                        onClick={handleSubmit}
+                        disabled={loading}
+                        startIcon={<SaveIcon />}
+                        sx={{ borderRadius: 2 }}
+                      >
+                        {loading ? "Đang xử lý..." : "Lưu thay đổi"}
+                      </Button>
+                    </Box>
+                  </Grid>
+                )}
+              </Grid>
             </Box>
-          </Paper>
-        </Grid>
+          </CardContent>
+        </Card>
+      </Container>
 
-        {/* Voucher Dialog */}
-        <VoucherDialog />
-      </Grid>
-    </Container>
+      <Snackbar
+        open={showSuccess}
+        autoHideDuration={3000}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+        onClose={() => setShowSuccess(false)}
+      >
+        <Alert
+          severity="success"
+          sx={{
+            width: "100%",
+            boxShadow: 3,
+            borderRadius: 2,
+          }}
+        >
+          Cập nhật thông tin thành công!
+        </Alert>
+      </Snackbar>
+    </Box>
   );
 };
 
-export default Checkout;
+export default Profile;
