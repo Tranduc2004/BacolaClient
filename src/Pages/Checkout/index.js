@@ -18,16 +18,7 @@ import {
   DialogTitle,
   DialogContent,
   DialogActions,
-  List,
-  ListItem,
-  ListItemText,
-  ListItemSecondaryAction,
   IconButton,
-  ListItemButton,
-  Radio,
-  RadioGroup,
-  FormControlLabel,
-  FormLabel,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { IoLocationSharp, IoCardSharp } from "react-icons/io5";
@@ -242,6 +233,16 @@ const Checkout = () => {
     fetchVouchers();
   }, []);
 
+  const calculateSubtotal = useCallback(() => {
+    return cartItems.reduce((total, item) => {
+      if (!item || !item.product) return total;
+      const discount = item.product.discount || 0;
+      const price = item.product.price || item.price;
+      const discountedPrice = price * (1 - discount / 100);
+      return total + discountedPrice * item.quantity;
+    }, 0);
+  }, [cartItems]);
+
   const calculateDiscountAmount = useCallback(() => {
     if (!selectedVoucher) return 0;
     const type = selectedVoucher.type || selectedVoucher.discountType;
@@ -312,17 +313,7 @@ const Checkout = () => {
       return percentDiscount;
     }
     return value > 0 ? Math.min(value, eligibleTotal) : 0;
-  }, [cartItems, selectedVoucher]);
-
-  const calculateSubtotal = useCallback(() => {
-    return cartItems.reduce((total, item) => {
-      if (!item || !item.product) return total;
-      const discount = item.product.discount || 0;
-      const price = item.product.price || item.price;
-      const discountedPrice = price * (1 - discount / 100);
-      return total + discountedPrice * item.quantity;
-    }, 0);
-  }, [cartItems]);
+  }, [cartItems, selectedVoucher, calculateSubtotal]);
 
   useEffect(() => {
     calculateDiscountAmount();
@@ -805,48 +796,6 @@ const Checkout = () => {
   useEffect(() => {
     checkPaymentStatus();
   }, [checkPaymentStatus]);
-
-  const handleVnpayPayment = async () => {
-    try {
-      const orderData = {
-        items: cartItems.map((item) => ({
-          productId: item.product._id,
-          quantity: item.quantity,
-          price: item.price,
-          name: item.product.name,
-          image: item.product.images?.[0] || "",
-          description: item.product.description,
-        })),
-        totalAmount: calculateSubtotal(),
-        userId: user._id,
-        shippingAddress: {
-          fullName: formData.fullName,
-          phone: formData.phone,
-          address: formData.address,
-          city: formData.cityName,
-          district: formData.districtName,
-          ward: formData.wardName,
-        },
-        note: note,
-        paymentMethod: "VNPAY",
-      };
-
-      const response = await createVnpayPayment(orderData);
-
-      if (response.success) {
-        setOrderId(response.data.orderId);
-        setPaymentMethod("VNPAY");
-        window.location.href = response.data.payUrl;
-      } else {
-        toast.error(response.message || "Lỗi khi tạo thanh toán VNPAY");
-      }
-    } catch (error) {
-      console.error("Error in handleVnpayPayment:", error);
-      toast.error(
-        error.response?.data?.message || "Lỗi khi tạo thanh toán VNPAY"
-      );
-    }
-  };
 
   if (loading) {
     return (

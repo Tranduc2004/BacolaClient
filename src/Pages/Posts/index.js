@@ -16,27 +16,6 @@ import { Link } from "react-router-dom";
 import { api } from "../../services/api";
 import SearchIcon from "@mui/icons-material/Search";
 
-const styles = {
-  container: {
-    maxWidth: "1200px",
-    margin: "0 auto",
-    padding: "20px",
-  },
-  content: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "20px",
-  },
-  postContent: {
-    display: "block",
-    marginTop: "20px",
-  },
-  postTitle: {
-    display: "block",
-    marginBottom: "10px",
-  },
-};
-
 const Posts = () => {
   const [posts, setPosts] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -256,11 +235,9 @@ const Posts = () => {
                         fontSize: "1.1rem",
                         color: "#333",
                         textDecoration: "none",
-                        display: "block",
                         lineHeight: 1.4,
                         height: 56,
                         overflow: "hidden",
-                        display: "-webkit-box",
                         WebkitLineClamp: 2,
                         WebkitBoxOrient: "vertical",
                         "&:hover": { color: "primary.main" },
@@ -381,12 +358,10 @@ const Posts = () => {
                         color: "#333",
                         fontWeight: 600,
                         textDecoration: "none",
-                        display: "block",
                         lineHeight: 1.4,
                         fontSize: "0.875rem",
                         "&:hover": { color: "primary.main" },
                         overflow: "hidden",
-                        display: "-webkit-box",
                         WebkitLineClamp: 2,
                         WebkitBoxOrient: "vertical",
                       }}

@@ -36,7 +36,6 @@ const ProductByCategory = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const [itemsPerPage, setItemsPerPage] = useState(9);
   const [priceRange, setPriceRange] = useState([0, 100000000]);
-  const [currentCategory, setCurrentCategory] = useState(null);
   const sidebarRef = useRef(null);
   const openDropdown = Boolean(anchorEl);
 
@@ -131,10 +130,6 @@ const ProductByCategory = () => {
     };
   }, []);
 
-  const handleCategoryClick = (category) => {
-    setCurrentCategory(category);
-  };
-
   return (
     <>
       <section className="product_Listing_Page">
@@ -190,14 +185,6 @@ const ProductByCategory = () => {
 
             <div className="content_right">
               <div className="showBy mt-3 mb-3 d-flex align-items-center">
-                {currentCategory && (
-                  <div className="category-header mb-4">
-                    <h2 className="text-2xl font-bold">
-                      {currentCategory.name}
-                    </h2>
-                    <p className="text-black">{currentCategory.description}</p>
-                  </div>
-                )}
                 <div className="d-flex align-items-center btnWraper">
                   <Button
                     className={productView === "one" ? "act" : ""}

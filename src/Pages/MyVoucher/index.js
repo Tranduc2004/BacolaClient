@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { getSavedVouchers, removeSavedVoucher } from "../../services/api";
 import { useNavigate } from "react-router-dom";
+import "../Voucher/Voucher.css";
 import {
   ChevronDown,
   Search,
@@ -9,30 +10,16 @@ import {
   Clock,
   Info,
   ShoppingBag,
-  Star,
   Check,
   Filter,
-  Award,
   Scissors,
   Zap,
   Percent,
   CreditCard,
-  TrendingUp,
   Trash2,
-  X,
   AlertCircle,
 } from "lucide-react";
-import {
-  Box,
-  Typography,
-  Container,
-  Grid,
-  Card,
-  CardContent,
-  Button,
-  Chip,
-  CircularProgress,
-} from "@mui/material";
+import {} from "@mui/material";
 
 const MyVoucher = () => {
   const [vouchers, setVouchers] = useState([]);

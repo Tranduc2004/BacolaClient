@@ -211,64 +211,21 @@ const Profile = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   const [isEditing, setIsEditing] = useState(false);
-  const [isGoogleUser, setIsGoogleUser] = useState(false);
+  const [isGoogleUser] = useState(false);
   const [avatarColor, setAvatarColor] = useState("#00aaff");
 
   const fetchUserProfile = useCallback(async () => {
     try {
-      const token = localStorage.getItem("token");
-      const user = JSON.parse(localStorage.getItem("user") || "{}");
-
-      // Kiểm tra nếu là user Google
-      if (!token && user?.authProvider === "google") {
-        setIsGoogleUser(true);
-        const googleUserData = {
-          name: user.name || "",
-          email: user.email || "",
-          phone: user.phone || "",
-        };
-        setFormData(googleUserData);
-        context.setUser(user);
-        return;
+      const response = await getUserProfile();
+      if (response.success) {
+        setFormData(response.data);
+        context.setUser(response.data);
       }
-
-      // Kiểm tra token cho người dùng thông thường
-      if (!token) {
-        context.setIsLogin(false);
-        navigate("/signin");
-        return;
-      }
-
-      const userData = await getUserProfile();
-
-      const formattedData = {
-        name: userData.name || "",
-        email: userData.email || "",
-        phone: userData.phone || "",
-      };
-
-      setFormData(formattedData);
-
-      // Cập nhật thông tin authProvider
-      if (userData.authProvider === "google") {
-        setIsGoogleUser(true);
-      }
-
-      context.setUser(userData);
-    } catch (err) {
-      console.error("Lỗi khi tải thông tin:", err);
-      if (
-        err.response?.status === 401 ||
-        err.message === "Không tìm thấy token"
-      ) {
-        localStorage.removeItem("token");
-        context.setIsLogin(false);
-        navigate("/signin");
-      } else {
-        setError("Không thể tải thông tin người dùng. Vui lòng thử lại sau.");
-      }
+    } catch (error) {
+      console.error("Lỗi khi lấy thông tin người dùng:", error);
+      navigate("/signin");
     }
-  }, [context.setUser, navigate]);
+  }, [context, navigate]);
 
   useEffect(() => {
     fetchUserProfile();
@@ -326,14 +283,14 @@ const Profile = () => {
       // Xử lý riêng cho Google user
       if (isGoogleUser) {
         const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-        const updatedUser = {
+        const updatedUserData = {
           ...currentUser,
           name: formData.name || "",
           phone: formData.phone || "",
         };
 
-        localStorage.setItem("user", JSON.stringify(updatedUser));
-        context.setUser(updatedUser);
+        localStorage.setItem("user", JSON.stringify(updatedUserData));
+        context.setUser(updatedUserData);
         setShowSuccess(true);
         setIsEditing(false);
         return;

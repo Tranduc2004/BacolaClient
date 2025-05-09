@@ -14,10 +14,8 @@ import {
   Clock,
   Info,
   ShoppingBag,
-  Star,
   Check,
   Filter,
-  Award,
   Scissors,
   Zap,
   Percent,
@@ -26,35 +24,14 @@ import {
 } from "lucide-react";
 
 const VoucherList = () => {
-  const [vouchers, setVouchers] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [vouchers, setVouchers] = useState([]);
   const [saving, setSaving] = useState("");
   const [savedVoucherIds, setSavedVoucherIds] = useState([]);
   const [selectedTab, setSelectedTab] = useState("Tất cả");
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const navigate = useNavigate();
-  const [error, setError] = useState(null);
-
-  const categories = [
-    { label: "Tất cả", value: "Tất cả", icon: <Tag size={16} /> },
-    { label: "Toàn Sàn", value: "Toàn Sàn", icon: <ShoppingBag size={16} /> },
-    {
-      label: "Shopee Choice",
-      value: "Shopee Choice",
-      icon: <Star size={16} />,
-    },
-    { label: "Freeship", value: "Freeship", icon: <Gift size={16} /> },
-    { label: "Shopee Video", value: "Shopee Video", icon: <Award size={16} /> },
-    { label: "Tiêu Dùng", value: "Tiêu Dùng", icon: <ShoppingBag size={16} /> },
-    { label: "Voucher Xtra", value: "Voucher Xtra", icon: <Award size={16} /> },
-    {
-      label: "Thời Trang",
-      value: "Thời Trang",
-      icon: <ShoppingBag size={16} />,
-    },
-    { label: "Sắc Đẹp", value: "Sắc Đẹp", icon: <Star size={16} /> },
-  ];
 
   const notify = (message, type = "success") => {
     console.log(`${type}: ${message}`);

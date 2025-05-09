@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { getProducts } from "../../services/api";
-import { Box, Typography, Button, LinearProgress } from "@mui/material";
-import AccessTimeIcon from "@mui/icons-material/AccessTime";
+import { Box, Typography, LinearProgress } from "@mui/material";
 import { Link } from "react-router-dom";
 
 function getTimeLeft(targetDate) {

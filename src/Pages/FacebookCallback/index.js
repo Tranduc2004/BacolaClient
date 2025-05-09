@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { handleFacebookCallback } from "../../services/api";
 import { toast } from "react-toastify";
@@ -12,17 +12,20 @@ const FacebookCallback = () => {
   const [error, setError] = useState(null);
   const { setIsLoggedIn, setUser } = useAuth();
 
-  const getTokenFromUrl = async (retryCount = 0) => {
-    const searchParams = new URLSearchParams(location.search);
-    const hashParams = new URLSearchParams(location.hash.substring(1));
-    let token = searchParams.get("token") || hashParams.get("token");
+  const getTokenFromUrl = useCallback(
+    async (retryCount = 0) => {
+      const searchParams = new URLSearchParams(location.search);
+      const hashParams = new URLSearchParams(location.hash.substring(1));
+      let token = searchParams.get("token") || hashParams.get("token");
 
-    if (!token && retryCount < 3) {
-      await new Promise((resolve) => setTimeout(resolve, 500));
-      return getTokenFromUrl(retryCount + 1);
-    }
-    return token;
-  };
+      if (!token && retryCount < 3) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        return getTokenFromUrl(retryCount + 1);
+      }
+      return token;
+    },
+    [location.search, location.hash]
+  );
 
   useEffect(() => {
     const processToken = async () => {
