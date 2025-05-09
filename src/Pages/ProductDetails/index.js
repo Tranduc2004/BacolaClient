@@ -3,7 +3,7 @@ import Rating from "@mui/material/Rating";
 import QuantityBox from "../../Components/QuantityBox";
 import Button from "@mui/material/Button";
 import { BsFillCartFill } from "react-icons/bs";
-import { useState, useEffect, useContext, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { FaRegHeart } from "react-icons/fa6";
 import { MdCompareArrows } from "react-icons/md";
 import Tooltip from "@mui/material/Tooltip";
@@ -11,7 +11,6 @@ import RelatedProducts from "../../Components/ProductDetails/RelatedProducts";
 import { useParams } from "react-router-dom";
 import { toast } from "react-hot-toast";
 import { useNavigate } from "react-router-dom";
-import { MyContext } from "../../App";
 import {
   getProductById,
   getBrands,
@@ -37,7 +36,6 @@ import {
   Alert,
   Snackbar,
   Container,
-  Grid,
 } from "@mui/material";
 import { styled } from "@mui/material/styles";
 import { FaHeart } from "react-icons/fa";
@@ -69,12 +67,6 @@ const ContentBox = styled(Box)(({ theme }) => ({
   borderRadius: 16,
   padding: 30,
   fontSize: "1.05rem",
-}));
-
-const ReviewItem = styled(Box)(({ theme }) => ({
-  marginBottom: 24,
-  borderBottom: "1px solid #e0e0e0",
-  paddingBottom: 24,
 }));
 
 const ReviewTextField = styled(TextField)(({ theme }) => ({
@@ -361,13 +353,6 @@ const ProductDetails = () => {
 
   const handleCloseAlert = () => {
     setAlert({ ...alert, open: false });
-  };
-
-  // Format date for display
-  const formatReviewDate = (dateString) => {
-    if (!dateString) return "N/A";
-    const options = { year: "numeric", month: "long", day: "numeric" };
-    return new Date(dateString).toLocaleDateString("vi-VN", options);
   };
 
   const handleAddToCart = async () => {

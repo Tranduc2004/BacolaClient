@@ -1,4 +1,4 @@
-import React, { useState, useContext, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Box,
   Typography,
@@ -12,7 +12,6 @@ import {
   createTheme,
 } from "@mui/material";
 import { useNavigate, useParams } from "react-router-dom";
-import { MyContext } from "../../App";
 import { resetPassword } from "../../services/api";
 
 // Create a custom theme with #00aaff as the primary color
@@ -32,7 +31,6 @@ const ResetPassword = () => {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { token } = useParams();
-  const { setUser } = useContext(MyContext);
 
   useEffect(() => {
     if (!token) {

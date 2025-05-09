@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Container,
   Typography,
@@ -6,7 +6,6 @@ import {
   Grid,
   Box,
   Chip,
-  CircularProgress,
   Divider,
   Button,
   Avatar,
@@ -37,11 +36,7 @@ const OrderDetail = () => {
   const { orderId } = useParams();
   const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchOrderDetail();
-  }, [orderId]);
-
-  const fetchOrderDetail = async () => {
+  const fetchOrderDetail = useCallback(async () => {
     try {
       setLoading(true);
       const response = await getOrderDetail(orderId);
@@ -56,7 +51,11 @@ const OrderDetail = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [orderId]);
+
+  useEffect(() => {
+    fetchOrderDetail();
+  }, [fetchOrderDetail]);
 
   const handleCancelOrder = async () => {
     if (!window.confirm("Bạn có chắc chắn muốn hủy đơn hàng này?")) return;

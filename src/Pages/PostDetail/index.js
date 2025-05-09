@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import {
   Box,
@@ -12,18 +12,14 @@ import {
   Stack,
   Chip,
   Container,
-  Divider,
   Grid,
   IconButton,
   InputAdornment,
 } from "@mui/material";
 import { api } from "../../services/api";
 import { toast } from "react-hot-toast";
-import AccessTimeIcon from "@mui/icons-material/AccessTime";
 import PersonIcon from "@mui/icons-material/Person";
 import ChatBubbleOutlineIcon from "@mui/icons-material/ChatBubbleOutline";
-import FavoriteIcon from "@mui/icons-material/Favorite";
-import BookmarkIcon from "@mui/icons-material/Bookmark";
 import ShareIcon from "@mui/icons-material/Share";
 import SearchIcon from "@mui/icons-material/Search";
 
@@ -38,16 +34,25 @@ const PostDetail = () => {
   const isAuthenticated = !!localStorage.getItem("token");
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    fetchPost();
-    window.scrollTo(0, 0);
-  }, [id]);
+  const fetchRelatedPosts = useCallback(
+    async (tags) => {
+      try {
+        const response = await api.get("/posts");
+        if (Array.isArray(response) && response.length > 0) {
+          const filtered = response.filter((p) => p._id !== id).slice(0, 3);
+          setRelatedPosts(filtered);
+        }
+      } catch (error) {
+        console.error("Lỗi khi lấy bài viết liên quan:", error);
+      }
+    },
+    [id]
+  );
 
-  const fetchPost = async () => {
+  const fetchPost = useCallback(async () => {
     try {
       const response = await api.get(`/posts/${id}`);
       setPost(response);
-      // Giả lập việc tải các bài viết liên quan
       fetchRelatedPosts(response.tags);
     } catch (error) {
       console.error("Lỗi khi lấy chi tiết bài viết:", error);
@@ -55,21 +60,12 @@ const PostDetail = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [id, fetchRelatedPosts]);
 
-  // Giả lập việc tải các bài viết liên quan dựa trên tags
-  const fetchRelatedPosts = async (tags) => {
-    try {
-      const response = await api.get("/posts");
-      if (Array.isArray(response) && response.length > 0) {
-        // Lọc và lấy 3 bài viết khác làm bài viết liên quan
-        const filtered = response.filter((p) => p._id !== id).slice(0, 3);
-        setRelatedPosts(filtered);
-      }
-    } catch (error) {
-      console.error("Lỗi khi lấy bài viết liên quan:", error);
-    }
-  };
+  useEffect(() => {
+    fetchPost();
+    window.scrollTo(0, 0);
+  }, [fetchPost]);
 
   const handleCommentSubmit = async (e) => {
     e.preventDefault();
@@ -127,6 +123,11 @@ const PostDetail = () => {
 
   return (
     <Container maxWidth="lg" sx={{ py: 4 }}>
+      {error && (
+        <Box sx={{ display: "flex", justifyContent: "center", mt: 4 }}>
+          <Typography color="error">{error}</Typography>
+        </Box>
+      )}
       <Grid container spacing={4}>
         {/* Main Content */}
         <Grid item xs={12} md={8}>
@@ -500,7 +501,6 @@ const PostDetail = () => {
                                 display: "block",
                                 lineHeight: 1.4,
                                 overflow: "hidden",
-                                display: "-webkit-box",
                                 WebkitLineClamp: 2,
                                 WebkitBoxOrient: "vertical",
                                 "&:hover": { color: "primary.main" },
@@ -626,7 +626,6 @@ const PostDetail = () => {
                           fontSize: "0.875rem",
                           "&:hover": { color: "primary.main" },
                           overflow: "hidden",
-                          display: "-webkit-box",
                           WebkitLineClamp: 2,
                           WebkitBoxOrient: "vertical",
                         }}

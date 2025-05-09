@@ -1,4 +1,4 @@
-import { useEffect, useContext, useState } from "react";
+import React, { useEffect, useContext, useState } from "react";
 import { MyContext } from "../../App";
 import { Link, useNavigate } from "react-router-dom";
 import {
@@ -17,9 +17,8 @@ import {
   Divider,
   ThemeProvider,
   createTheme,
-  Snackbar,
-  Alert,
 } from "@mui/material";
+import { toast } from "react-hot-toast";
 
 // Tạo một theme tùy chỉnh với #00aaff làm màu chính
 const theme = createTheme({
@@ -83,12 +82,13 @@ const SignUp = () => {
   });
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [showSuccess, setShowSuccess] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
 
   useEffect(() => {
-    context.setIsHeaderFooterShow(false);
-  }, []);
+    if (context.user) {
+      navigate("/");
+    }
+  }, [context, navigate]);
 
   const validateForm = () => {
     const errors = {};
@@ -147,7 +147,6 @@ const SignUp = () => {
     e.preventDefault();
     setError("");
 
-    // Kiểm tra validation trước khi gửi form
     if (!validateForm()) {
       return;
     }
@@ -155,16 +154,10 @@ const SignUp = () => {
     setLoading(true);
 
     try {
-      const response = await register(formData);
-      setShowSuccess(true);
-
-      // Chuyển về trang login sau 1.5 giây
-      setTimeout(() => {
-        context.setIsHeaderFooterShow(true);
-        navigate("/signin");
-      }, 1500);
+      await register(formData);
+      toast.success("Đăng ký thành công!");
+      navigate("/signin");
     } catch (err) {
-      // Xử lý lỗi cụ thể từ server
       if (err.response?.data?.message?.includes("email")) {
         setError("Email đã tồn tại. Vui lòng sử dụng email khác.");
       } else {
@@ -448,16 +441,6 @@ const SignUp = () => {
             zIndex: 0,
           }}
         />
-
-        <Snackbar
-          open={showSuccess}
-          autoHideDuration={1500}
-          anchorOrigin={{ vertical: "top", horizontal: "center" }}
-        >
-          <Alert severity="success" sx={{ width: "100%" }}>
-            Đăng ký thành công!
-          </Alert>
-        </Snackbar>
       </Box>
     </ThemeProvider>
   );
