@@ -11,7 +11,7 @@ import { Swiper, SwiperSlide } from "swiper/react";
 import { Navigation } from "swiper/modules";
 import * as React from "react";
 import { CiMail } from "react-icons/ci";
-import { useState, useEffect, useMemo, useCallback, memo } from "react";
+import { useState, useEffect, useMemo, memo } from "react";
 import { getProducts, getReviewsByProduct } from "../../services/api";
 import { Link } from "react-router-dom";
 import ProductItem from "../../Components/ProductItem";

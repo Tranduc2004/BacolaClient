@@ -30,16 +30,13 @@ import {
 } from "@mui/material";
 import {
   Home as HomeIcon,
-  CheckCircle,
   LocalShipping,
   Payment,
-  ShoppingCart,
   ContentCopy,
   Person,
   Phone,
   LocationOn,
   NoteAlt,
-  FavoriteBorder,
   Inventory,
   RestaurantMenu,
   AccessTime,
@@ -155,13 +152,6 @@ const StatusLabel = styled(Typography)(({ theme, status }) => {
   };
 });
 
-const InfoChip = styled(Chip)(({ theme }) => ({
-  borderRadius: 8,
-  fontWeight: 500,
-  boxShadow: "0 2px 8px rgba(0, 0, 0, 0.05)",
-  margin: theme.spacing(0.5),
-}));
-
 const SocialButton = styled(IconButton)(({ theme, color }) => ({
   backgroundColor: color,
   color: "#fff",
@@ -186,8 +176,7 @@ const ThankYou = () => {
   const [copied, setCopied] = useState(false);
   const [showConfetti, setShowConfetti] = useState(true);
   const theme = useTheme();
-  const isMobile = useMediaQuery(theme.breakpoints.down("md"));
-  const isTablet = useMediaQuery(theme.breakpoints.down("lg"));
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   useEffect(() => {
     if (location.state?.order) {

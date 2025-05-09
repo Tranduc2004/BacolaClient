@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from "react";
-import { CiSearch } from "react-icons/ci";
 import { IoClose } from "react-icons/io5";
 import { useNavigate } from "react-router-dom";
 import { getSearchSuggestions } from "../../../services/api";

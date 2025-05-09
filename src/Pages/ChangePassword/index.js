@@ -40,7 +40,10 @@ const ChangePassword = () => {
 
   useEffect(() => {
     context.setIsHeaderFooterShow(false);
-  }, []);
+    if (context.user) {
+      navigate("/");
+    }
+  }, [context, navigate]);
 
   const validateForm = () => {
     const errors = {};

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useCallback } from "react";
 import { getSavedVouchers, removeSavedVoucher } from "../../services/api";
 import { useNavigate } from "react-router-dom";
 import {
@@ -22,6 +22,17 @@ import {
   X,
   AlertCircle,
 } from "lucide-react";
+import {
+  Box,
+  Typography,
+  Container,
+  Grid,
+  Card,
+  CardContent,
+  Button,
+  Chip,
+  CircularProgress,
+} from "@mui/material";
 
 const MyVoucher = () => {
   const [vouchers, setVouchers] = useState([]);
@@ -47,7 +58,7 @@ const MyVoucher = () => {
     console.log(`${type}: ${message}`);
   };
 
-  const fetchVouchers = async () => {
+  const fetchVouchers = useCallback(async () => {
     try {
       setLoading(true);
       const response = await getSavedVouchers();
@@ -76,11 +87,11 @@ const MyVoucher = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [navigate]);
 
   useEffect(() => {
     fetchVouchers();
-  }, [navigate]);
+  }, [fetchVouchers]);
 
   // Helper functions (đặt lên trên để tránh lỗi ReferenceError)
   const formatDate = (dateString) => {

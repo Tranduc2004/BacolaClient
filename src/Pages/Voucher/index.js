@@ -34,6 +34,7 @@ const VoucherList = () => {
   const [searchTerm, setSearchTerm] = useState("");
   const [showFilters, setShowFilters] = useState(false);
   const navigate = useNavigate();
+  const [error, setError] = useState(null);
 
   const categories = [
     { label: "Tất cả", value: "Tất cả", icon: <Tag size={16} /> },

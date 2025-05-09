@@ -131,6 +131,10 @@ const ProductByCategory = () => {
     };
   }, []);
 
+  const handleCategoryClick = (category) => {
+    setCurrentCategory(category);
+  };
+
   return (
     <>
       <section className="product_Listing_Page">

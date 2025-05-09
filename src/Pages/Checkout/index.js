@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   Box,
   Container,
@@ -24,6 +24,10 @@ import {
   ListItemSecondaryAction,
   IconButton,
   ListItemButton,
+  Radio,
+  RadioGroup,
+  FormControlLabel,
+  FormLabel,
 } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import { IoLocationSharp, IoCardSharp } from "react-icons/io5";
@@ -238,15 +242,16 @@ const Checkout = () => {
     fetchVouchers();
   }, []);
 
-  // Hàm tính số tiền giảm giá dựa trên voucher và tổng tiền
-  const calculateDiscountAmount = (voucher, subtotal) => {
-    if (!voucher) return 0;
-    const type = voucher.type || voucher.discountType;
-    const value = Number(voucher.value || voucher.discountValue);
+  const calculateDiscountAmount = useCallback(() => {
+    if (!selectedVoucher) return 0;
+    const type = selectedVoucher.type || selectedVoucher.discountType;
+    const value = Number(
+      selectedVoucher.value || selectedVoucher.discountValue
+    );
 
     // Lấy danh sách sản phẩm và danh mục áp dụng
-    const applicableProducts = voucher.applicableProducts || [];
-    const applicableCategories = voucher.applicableCategories || [];
+    const applicableProducts = selectedVoucher.applicableProducts || [];
+    const applicableCategories = selectedVoucher.applicableCategories || [];
 
     // Tính tổng tiền các sản phẩm được áp dụng giảm giá
     let eligibleTotal = 0;
@@ -270,32 +275,32 @@ const Checkout = () => {
         return total;
       }, 0);
     } else {
-      eligibleTotal = subtotal;
+      eligibleTotal = calculateSubtotal();
     }
 
     // Ép cứng maxDiscount = 80000 nếu là mã GIAMGIA50% để test
     let maxDiscount = 0;
-    if (voucher.code === "GIAMGIA50%") {
+    if (selectedVoucher.code === "GIAMGIA50%") {
       maxDiscount = 80000;
     } else if (
-      voucher.maxDiscountAmount !== undefined &&
-      voucher.maxDiscountAmount !== null &&
-      !isNaN(Number(voucher.maxDiscountAmount)) &&
-      Number(voucher.maxDiscountAmount) > 0
+      selectedVoucher.maxDiscountAmount !== undefined &&
+      selectedVoucher.maxDiscountAmount !== null &&
+      !isNaN(Number(selectedVoucher.maxDiscountAmount)) &&
+      Number(selectedVoucher.maxDiscountAmount) > 0
     ) {
-      maxDiscount = Number(voucher.maxDiscountAmount);
+      maxDiscount = Number(selectedVoucher.maxDiscountAmount);
     } else if (
-      voucher.maxDiscount !== undefined &&
-      voucher.maxDiscount !== null &&
-      !isNaN(Number(voucher.maxDiscount)) &&
-      Number(voucher.maxDiscount) > 0
+      selectedVoucher.maxDiscount !== undefined &&
+      selectedVoucher.maxDiscount !== null &&
+      !isNaN(Number(selectedVoucher.maxDiscount)) &&
+      Number(selectedVoucher.maxDiscount) > 0
     ) {
-      maxDiscount = Number(voucher.maxDiscount);
+      maxDiscount = Number(selectedVoucher.maxDiscount);
     }
 
     if (
-      voucher.minOrderValue &&
-      eligibleTotal < Number(voucher.minOrderValue)
+      selectedVoucher.minOrderValue &&
+      eligibleTotal < Number(selectedVoucher.minOrderValue)
     ) {
       return 0;
     }
@@ -307,13 +312,22 @@ const Checkout = () => {
       return percentDiscount;
     }
     return value > 0 ? Math.min(value, eligibleTotal) : 0;
-  };
+  }, [cartItems, selectedVoucher]);
 
-  // Tự động cập nhật discountAmount khi selectedVoucher hoặc cartItems thay đổi
+  const calculateSubtotal = useCallback(() => {
+    return cartItems.reduce((total, item) => {
+      if (!item || !item.product) return total;
+      const discount = item.product.discount || 0;
+      const price = item.product.price || item.price;
+      const discountedPrice = price * (1 - discount / 100);
+      return total + discountedPrice * item.quantity;
+    }, 0);
+  }, [cartItems]);
+
   useEffect(() => {
-    const subtotal = calculateSubtotal();
-    setDiscountAmount(calculateDiscountAmount(selectedVoucher, subtotal));
-  }, [selectedVoucher, cartItems]);
+    calculateDiscountAmount();
+    calculateSubtotal();
+  }, [calculateDiscountAmount, calculateSubtotal]);
 
   // Sửa lại hàm handleSelectVoucher: kiểm tra sản phẩm/danh mục trước khi set
   const handleSelectVoucher = (voucher) => {
@@ -350,17 +364,6 @@ const Checkout = () => {
   const handleRemoveVoucher = () => {
     setSelectedVoucher(null);
     setDiscountAmount(0);
-  };
-
-  // Sửa lại hàm tính tổng tiền chỉ trả về tổng tiền hàng (chưa trừ giảm giá)
-  const calculateSubtotal = () => {
-    return cartItems.reduce((total, item) => {
-      if (!item || !item.product) return total;
-      const discount = item.product.discount || 0;
-      const price = item.product.price || item.price;
-      const discountedPrice = price * (1 - discount / 100);
-      return total + discountedPrice * item.quantity;
-    }, 0);
   };
 
   // Thêm Dialog chọn voucher
@@ -761,7 +764,7 @@ const Checkout = () => {
     }
   };
 
-  const checkPaymentStatus = async (orderId, paymentMethod) => {
+  const checkPaymentStatus = useCallback(async () => {
     try {
       console.log("Checking payment status for order:", orderId);
       let response;
@@ -797,20 +800,11 @@ const Checkout = () => {
       console.error("Lỗi khi kiểm tra trạng thái thanh toán:", error);
       return false;
     }
-  };
+  }, [orderId, paymentMethod, navigate]);
 
   useEffect(() => {
-    if (orderId && paymentMethod) {
-      const interval = setInterval(async () => {
-        const isCompleted = await checkPaymentStatus(orderId, paymentMethod);
-        if (isCompleted) {
-          clearInterval(interval);
-        }
-      }, 3000);
-
-      return () => clearInterval(interval);
-    }
-  }, [orderId, paymentMethod, navigate]);
+    checkPaymentStatus();
+  }, [checkPaymentStatus]);
 
   const handleVnpayPayment = async () => {
     try {

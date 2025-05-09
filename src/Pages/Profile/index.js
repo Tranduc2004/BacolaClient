@@ -1,4 +1,4 @@
-import { useEffect, useContext, useState } from "react";
+import { useEffect, useContext, useState, useCallback } from "react";
 import { MyContext } from "../../App";
 import { useNavigate } from "react-router-dom";
 import {
@@ -214,17 +214,7 @@ const Profile = () => {
   const [isGoogleUser, setIsGoogleUser] = useState(false);
   const [avatarColor, setAvatarColor] = useState("#00aaff");
 
-  useEffect(() => {
-    fetchUserProfile();
-  }, []);
-
-  useEffect(() => {
-    if (formData.name) {
-      setAvatarColor(stringToColor(formData.name));
-    }
-  }, [formData.name]);
-
-  const fetchUserProfile = async () => {
+  const fetchUserProfile = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
       const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -278,7 +268,17 @@ const Profile = () => {
         setError("Không thể tải thông tin người dùng. Vui lòng thử lại sau.");
       }
     }
-  };
+  }, [context.setUser, navigate]);
+
+  useEffect(() => {
+    fetchUserProfile();
+  }, [fetchUserProfile]);
+
+  useEffect(() => {
+    if (formData.name) {
+      setAvatarColor(stringToColor(formData.name));
+    }
+  }, [formData.name]);
 
   const validateForm = () => {
     const errors = {};

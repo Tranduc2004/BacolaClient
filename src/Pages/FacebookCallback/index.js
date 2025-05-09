@@ -67,7 +67,7 @@ const FacebookCallback = () => {
       }
     };
     processToken();
-  }, [location, navigate, setIsLoggedIn, setUser]);
+  }, [location, navigate, setIsLoggedIn, setUser, getTokenFromUrl]);
 
   if (loading) {
     return (

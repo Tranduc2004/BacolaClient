@@ -107,7 +107,7 @@ const GoogleCallback = () => {
 
     // Xử lý ngay khi component mount
     processToken();
-  }, [location, navigate, setIsLoggedIn, setUser]);
+  }, [location, navigate, setIsLoggedIn, setUser, getTokenFromUrl]);
 
   if (loading) {
     return (
