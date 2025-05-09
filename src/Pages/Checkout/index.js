@@ -35,7 +35,7 @@ import voucherImg from "../../assets/images/voucher.jpg";
 import "../Voucher/Voucher.css";
 
 // Set baseURL for axios
-axios.defaults.baseURL = "http://localhost:4000";
+axios.defaults.baseURL = "https://bacola.onrender.com/";
 
 const Checkout = () => {
   const navigate = useNavigate();
