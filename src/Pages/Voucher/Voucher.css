@@ -1,0 +1,209 @@
+.voucher-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 32px 8px;
+}
+
+.voucher-title {
+  text-align: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+  margin-bottom: 24px;
+  color: #2563eb;
+  letter-spacing: 1px;
+}
+
+.voucher-list-wrapper {
+  background: #fff;
+  border-radius: 24px;
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.07);
+  padding: 24px 12px 32px 12px;
+  margin: 0 auto 32px auto;
+  max-width: 900px;
+}
+
+.voucher-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 20px 16px;
+  justify-items: center;
+  align-items: stretch;
+}
+
+.voucher-card-custom {
+  width: 220px;
+  min-height: 100px;
+  background-size: cover;
+  background-position: center;
+  border-radius: 14px;
+  box-shadow: 0 2px 12px 0 rgba(37, 99, 235, 0.08);
+  display: flex;
+  flex-direction: row;
+  overflow: hidden;
+  position: relative;
+  margin-bottom: 0;
+  transition: transform 0.2s;
+  cursor: pointer;
+}
+.voucher-card-custom:hover {
+  box-shadow: 0 6px 18px 0 rgba(37, 99, 235, 0.16);
+}
+
+.voucher-left {
+  width: 60px;
+  background: rgba(37, 99, 235, 0.92);
+  color: #fff;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 4px 10px 4px;
+  border-top-left-radius: 14px;
+  border-bottom-left-radius: 14px;
+  position: relative;
+}
+.voucher-shop-icon {
+  font-size: 1.3rem;
+  margin-bottom: 2px;
+}
+.voucher-shop-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  text-align: center;
+  margin-bottom: 4px;
+  line-height: 1.2;
+}
+.voucher-expiry {
+  font-size: 0.8rem;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: 8px;
+  padding: 2px 6px;
+  margin-top: 4px;
+  font-weight: 500;
+}
+
+.voucher-right {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.92);
+  border-top-right-radius: 14px;
+  border-bottom-right-radius: 14px;
+  padding: 8px 8px 8px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+.voucher-discount {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ef4444;
+  margin-bottom: 2px;
+}
+.voucher-discount-value {
+  font-size: 1.1rem;
+  font-weight: bold;
+  color: #eab308;
+  margin-left: 2px;
+}
+.voucher-min-order {
+  font-size: 0.85rem;
+  color: #334155;
+  margin-bottom: 2px;
+}
+.voucher-note {
+  font-size: 0.8rem;
+  color: #f59e42;
+  margin-bottom: 2px;
+  font-style: italic;
+}
+.voucher-actions {
+  margin-top: 4px;
+  display: flex;
+  gap: 6px;
+}
+.voucher-btn-custom {
+  background: #22c55e;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 5px 0;
+  font-size: 0.95rem;
+  font-weight: 600;
+  width: 100%;
+  cursor: pointer;
+  transition: background 0.18s;
+}
+.voucher-btn-custom:disabled {
+  background: #a5b4fc;
+  color: #fff;
+  cursor: not-allowed;
+}
+
+.voucher-btn-custom.remove {
+  background-color: #ff4d4f;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.voucher-btn-custom.remove:hover {
+  background-color: #ff7875;
+}
+
+.voucher-btn-custom.remove:disabled {
+  background-color: #ffccc7;
+  cursor: not-allowed;
+}
+
+.voucher-tabs {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.voucher-tab-btn {
+  background: #f5f5f5;
+  border: none;
+  border-radius: 20px;
+  padding: 6px 16px;
+  font-weight: 600;
+  color: #00aaff;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s;
+  font-size: 1rem;
+}
+.voucher-tab-btn.active {
+  background: #00aaff;
+  color: #fff;
+}
+
+@media (max-width: 900px) {
+  .voucher-list {
+    grid-template-columns: 1fr 1fr;
+    gap: 16px 8px;
+  }
+  .voucher-list-wrapper {
+    padding: 10px 2px 18px 2px;
+    max-width: 98vw;
+  }
+  .voucher-card-custom {
+    width: 98vw;
+    min-width: 0;
+    max-width: 320px;
+  }
+}
+
+@media (max-width: 600px) {
+  .voucher-list {
+    grid-template-columns: 1fr;
+    gap: 12px 0;
+  }
+  .voucher-card-custom {
+    width: 98vw;
+    min-width: 0;
+    max-width: 98vw;
+  }
+}
