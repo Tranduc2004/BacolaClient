@@ -31,6 +31,8 @@ import Compare from "./Pages/Compare";
 import VoucherList from "./Pages/Voucher";
 import MyVoucher from "./Pages/MyVoucher";
 import FacebookCallback from "./Pages/FacebookCallback";
+import Chat from "./Pages/Chat";
+import About from "./Pages/About";
 
 const MyContext = createContext();
 
@@ -154,6 +156,8 @@ function App() {
             <Route path="/compare" element={<Compare />} />
             <Route path="/voucher" element={<VoucherList />} />
             <Route path="/myvoucher" element={<MyVoucher />} />
+            <Route path="/chat" element={<Chat />} />
+            <Route path="/about" element={<About />} />
           </Routes>
           {shouldShowHeaderFooter(window.location.pathname) && <Footer />}
         </BrowserRouter>

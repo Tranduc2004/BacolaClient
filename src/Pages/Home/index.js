@@ -28,7 +28,7 @@ import "swiper/css/pagination";
 // Tách Swiper settings ra ngoài component
 const swiperSettings = {
   slidesPerView: 4,
-  spaceBetween: 8,
+  spaceBetween: 0,
   slidesPerGroup: 1,
   pagination: { clickable: true },
   navigation: true,

@@ -1,4 +1,4 @@
-import { useEffect, useContext, useState, useCallback } from "react";
+import { useEffect, useContext, useState } from "react";
 import { MyContext } from "../../App";
 import { useNavigate } from "react-router-dom";
 import {
@@ -211,31 +211,74 @@ const Profile = () => {
   const [showSuccess, setShowSuccess] = useState(false);
   const [validationErrors, setValidationErrors] = useState({});
   const [isEditing, setIsEditing] = useState(false);
-  const [isGoogleUser] = useState(false);
+  const [isGoogleUser, setIsGoogleUser] = useState(false);
   const [avatarColor, setAvatarColor] = useState("#00aaff");
-
-  const fetchUserProfile = useCallback(async () => {
-    try {
-      const response = await getUserProfile();
-      if (response.success) {
-        setFormData(response.data);
-        context.setUser(response.data);
-      }
-    } catch (error) {
-      console.error("Lỗi khi lấy thông tin người dùng:", error);
-      navigate("/signin");
-    }
-  }, [context, navigate]);
 
   useEffect(() => {
     fetchUserProfile();
-  }, [fetchUserProfile]);
+  }, []);
 
   useEffect(() => {
     if (formData.name) {
       setAvatarColor(stringToColor(formData.name));
     }
   }, [formData.name]);
+
+  const fetchUserProfile = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+
+      // Kiểm tra nếu là user Google
+      if (!token && user?.authProvider === "google") {
+        setIsGoogleUser(true);
+        const googleUserData = {
+          name: user.name || "",
+          email: user.email || "",
+          phone: user.phone || "",
+        };
+        setFormData(googleUserData);
+        context.setUser(user);
+        return;
+      }
+
+      // Kiểm tra token cho người dùng thông thường
+      if (!token) {
+        context.setIsLogin(false);
+        navigate("/signin");
+        return;
+      }
+
+      const userData = await getUserProfile();
+
+      const formattedData = {
+        name: userData.name || "",
+        email: userData.email || "",
+        phone: userData.phone || "",
+      };
+
+      setFormData(formattedData);
+
+      // Cập nhật thông tin authProvider
+      if (userData.authProvider === "google") {
+        setIsGoogleUser(true);
+      }
+
+      context.setUser(userData);
+    } catch (err) {
+      console.error("Lỗi khi tải thông tin:", err);
+      if (
+        err.response?.status === 401 ||
+        err.message === "Không tìm thấy token"
+      ) {
+        localStorage.removeItem("token");
+        context.setIsLogin(false);
+        navigate("/signin");
+      } else {
+        setError("Không thể tải thông tin người dùng. Vui lòng thử lại sau.");
+      }
+    }
+  };
 
   const validateForm = () => {
     const errors = {};
@@ -283,14 +326,14 @@ const Profile = () => {
       // Xử lý riêng cho Google user
       if (isGoogleUser) {
         const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
-        const updatedUserData = {
+        const updatedUser = {
           ...currentUser,
           name: formData.name || "",
           phone: formData.phone || "",
         };
 
-        localStorage.setItem("user", JSON.stringify(updatedUserData));
-        context.setUser(updatedUserData);
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+        context.setUser(updatedUser);
         setShowSuccess(true);
         setIsEditing(false);
         return;
@@ -338,13 +381,12 @@ const Profile = () => {
   return (
     <Box
       sx={{
-        backgroundColor: "grey.100",
+        py: 6,
+        backgroundColor: "#fff",
+        minHeight: "calc(100vh - 200px)",
       }}
     >
-      <Container
-        maxWidth="lg"
-        sx={{ backgroundColor: "white", borderRadius: 3, padding: 4 }}
-      >
+      <Container maxWidth="md" s={{ backgroundColor: "white" }}>
         <Box sx={{ mb: 4 }}>
           <Typography
             variant="h4"

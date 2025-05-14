@@ -89,7 +89,7 @@ const SignIn = () => {
     return () => {
       context.setIsHeaderFooterShow(true);
     };
-  }); // Chỉ chạy 1 lần khi mount
+  }, []); // Chỉ chạy 1 lần khi mount
 
   const handleChange = (e) => {
     setFormData({

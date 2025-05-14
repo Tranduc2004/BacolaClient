@@ -4,7 +4,30 @@ import { FaAngleDown, FaAngleRight } from "react-icons/fa";
 const NavLinks = () => {
   const [activeMenu, setActiveMenu] = useState(null);
   const [activeSubMenu, setActiveSubMenu] = useState(null);
+  const [unreadMessages, setUnreadMessages] = useState({});
   const timeoutRef = useRef(null);
+
+  // Theo dõi thay đổi số thông báo mới trong localStorage
+  useEffect(() => {
+    const handleStorage = () => {
+      const storedUnread = localStorage.getItem("unread_messages");
+      if (storedUnread) {
+        setUnreadMessages(JSON.parse(storedUnread));
+      }
+    };
+    window.addEventListener("storage", handleStorage);
+    const interval = setInterval(handleStorage, 1000);
+    return () => {
+      window.removeEventListener("storage", handleStorage);
+      clearInterval(interval);
+    };
+  }, []);
+
+  // Tính tổng số tin nhắn chưa đọc
+  const totalUnread = Object.values(unreadMessages).reduce(
+    (sum, count) => sum + count,
+    0
+  );
 
   const handleMenuLeave = () => {
     timeoutRef.current = setTimeout(() => {
@@ -37,11 +60,10 @@ const NavLinks = () => {
       name: "Cửa hàng",
       link: "/listing",
     },
-    { name: "MEATS & SEAFOOD", link: "/meats-seafood" },
-    { name: "BAKERY", link: "/bakery" },
-    { name: "BEVERAGES", link: "/beverages" },
     { name: "Bài viết", link: "/posts" },
     { name: "Mã giảm giá", link: "/voucher" },
+    { name: "Chat với nhân viên hỗ trợ", link: "/chat" },
+    { name: "Giới thiệu & Liên hệ", link: "/about" },
   ];
 
   return (
@@ -67,6 +89,25 @@ const NavLinks = () => {
             }`}
           >
             {item.name}
+            {/* Badge cho Hỗ trợ */}
+            {item.name === "Hỗ trợ" && totalUnread > 0 && (
+              <span
+                style={{
+                  background: "#ff3b3b",
+                  color: "#fff",
+                  borderRadius: "50%",
+                  padding: "2px 8px",
+                  fontSize: 12,
+                  marginLeft: 6,
+                  minWidth: 20,
+                  textAlign: "center",
+                  fontWeight: 700,
+                  display: "inline-block",
+                }}
+              >
+                {totalUnread}
+              </span>
+            )}
             {item.subItems && (
               <span
                 className={`ml-1 transition-transform duration-300 ${

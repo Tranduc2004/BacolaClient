@@ -757,6 +757,11 @@ const Checkout = () => {
 
   const checkPaymentStatus = useCallback(async () => {
     try {
+      // Kiểm tra nếu không có orderId hoặc paymentMethod thì không thực hiện
+      if (!orderId || !paymentMethod) {
+        return false;
+      }
+
       console.log("Checking payment status for order:", orderId);
       let response;
 
@@ -776,7 +781,7 @@ const Checkout = () => {
         });
       }
 
-      if (response.data.success) {
+      if (response && response.data && response.data.success) {
         if (response.data.data.status === "SUCCESS") {
           toast.success("Thanh toán thành công!");
           navigate(`/orders/${orderId}`);
