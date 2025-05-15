@@ -39,11 +39,26 @@ const ChangePassword = () => {
   const [validationErrors, setValidationErrors] = useState({});
 
   useEffect(() => {
+    // Ẩn header và footer khi component mount
     context.setIsHeaderFooterShow(false);
-    if (context.user) {
-      navigate("/");
+
+    // Kiểm tra đăng nhập
+    if (!context.user) {
+      navigate("/signin");
     }
+
+    // Cleanup function để hiện lại header và footer khi component unmount
+    return () => {
+      context.setIsHeaderFooterShow(true);
+    };
   }, [context, navigate]);
+
+  // Thêm useEffect để xử lý khi component unmount
+  useEffect(() => {
+    return () => {
+      context.setIsHeaderFooterShow(true);
+    };
+  }, [context]);
 
   const validateForm = () => {
     const errors = {};
@@ -133,6 +148,7 @@ const ChangePassword = () => {
           alignItems: "center",
           position: "relative",
           overflow: "hidden",
+          padding: { xs: "20px", sm: "0" },
         }}
       >
         {/* Hình dạng nền */}
@@ -146,14 +162,27 @@ const ChangePassword = () => {
             backgroundColor: "rgba(255, 255, 255, 0.1)",
             borderRadius: "50%",
             zIndex: 0,
+            display: { xs: "none", sm: "block" },
           }}
         />
 
         <Container
           maxWidth="sm"
-          sx={{ py: 8, position: "relative", zIndex: 1 }}
+          sx={{
+            py: { xs: 4, sm: 8 },
+            position: "relative",
+            zIndex: 1,
+            px: { xs: 2, sm: 3 },
+          }}
         >
-          <Paper elevation={6} sx={{ p: 4, borderRadius: 2 }}>
+          <Paper
+            elevation={6}
+            sx={{
+              p: { xs: 2, sm: 4 },
+              borderRadius: 2,
+              width: "100%",
+            }}
+          >
             <Box sx={{ display: "flex", justifyContent: "center", mb: 4 }}>
               <Box display="flex" alignItems="center">
                 {/* Logo Icon */}
@@ -283,7 +312,7 @@ const ChangePassword = () => {
           </Paper>
         </Container>
 
-        {/* Hình dạng bổ sung cho sự thú vị về mặt hình ảnh */}
+        {/* Hình dạng bổ sung */}
         <Box
           sx={{
             position: "absolute",
@@ -294,6 +323,7 @@ const ChangePassword = () => {
             backgroundColor: "rgba(255, 255, 255, 0.1)",
             borderRadius: "50%",
             zIndex: 0,
+            display: { xs: "none", sm: "block" },
           }}
         />
 

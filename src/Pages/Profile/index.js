@@ -1,4 +1,4 @@
-import { useEffect, useContext, useState } from "react";
+import { useEffect, useContext, useState, useCallback } from "react";
 import { MyContext } from "../../App";
 import { useNavigate } from "react-router-dom";
 import {
@@ -213,18 +213,11 @@ const Profile = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [isGoogleUser, setIsGoogleUser] = useState(false);
   const [avatarColor, setAvatarColor] = useState("#00aaff");
+  const [shouldFetch, setShouldFetch] = useState(true);
 
-  useEffect(() => {
-    fetchUserProfile();
-  }, []);
+  const fetchUserProfile = useCallback(async () => {
+    if (!shouldFetch) return;
 
-  useEffect(() => {
-    if (formData.name) {
-      setAvatarColor(stringToColor(formData.name));
-    }
-  }, [formData.name]);
-
-  const fetchUserProfile = async () => {
     try {
       const token = localStorage.getItem("token");
       const user = JSON.parse(localStorage.getItem("user") || "{}");
@@ -278,7 +271,17 @@ const Profile = () => {
         setError("Không thể tải thông tin người dùng. Vui lòng thử lại sau.");
       }
     }
-  };
+  }, [context, navigate, shouldFetch]);
+
+  useEffect(() => {
+    fetchUserProfile();
+  }, [fetchUserProfile]);
+
+  useEffect(() => {
+    if (formData.name) {
+      setAvatarColor(stringToColor(formData.name));
+    }
+  }, [formData.name]);
 
   const validateForm = () => {
     const errors = {};
@@ -295,6 +298,17 @@ const Profile = () => {
 
     setValidationErrors(errors);
     return Object.keys(errors).length === 0;
+  };
+
+  const handleCancel = () => {
+    setIsEditing(false);
+    setValidationErrors({});
+    setShouldFetch(true);
+  };
+
+  const handleEdit = () => {
+    setIsEditing(true);
+    setShouldFetch(false);
   };
 
   const handleChange = (e) => {
@@ -336,6 +350,7 @@ const Profile = () => {
         context.setUser(updatedUser);
         setShowSuccess(true);
         setIsEditing(false);
+        setShouldFetch(true);
         return;
       }
 
@@ -359,6 +374,7 @@ const Profile = () => {
       localStorage.setItem("user", JSON.stringify(formattedUser));
       setShowSuccess(true);
       setIsEditing(false);
+      setShouldFetch(true);
     } catch (err) {
       console.error("Lỗi khi cập nhật:", err);
       if (
@@ -522,7 +538,7 @@ const Profile = () => {
                 variant="contained"
                 color="primary"
                 startIcon={<EditIcon />}
-                onClick={() => setIsEditing(true)}
+                onClick={handleEdit}
                 disabled={loading}
                 sx={{
                   borderRadius: 2,
@@ -545,11 +561,7 @@ const Profile = () => {
                 <Tooltip title="Hủy">
                   <IconButton
                     color="error"
-                    onClick={() => {
-                      setIsEditing(false);
-                      setValidationErrors({});
-                      fetchUserProfile();
-                    }}
+                    onClick={handleCancel}
                     disabled={loading}
                     sx={{ boxShadow: 1 }}
                   >
@@ -703,11 +715,7 @@ const Profile = () => {
                         fullWidth
                         variant="outlined"
                         color="error"
-                        onClick={() => {
-                          setIsEditing(false);
-                          setValidationErrors({});
-                          fetchUserProfile();
-                        }}
+                        onClick={handleCancel}
                         disabled={loading}
                         startIcon={<CancelIcon />}
                         sx={{ borderRadius: 2 }}

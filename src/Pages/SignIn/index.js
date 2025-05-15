@@ -84,10 +84,15 @@ const SignIn = () => {
 
   // Ẩn header và footer khi vào trang đăng nhập
   useEffect(() => {
+    // Ẩn header và footer khi component mount
     context.setIsHeaderFooterShow(false);
 
+    // Cleanup function để hiện lại header và footer khi component unmount
     return () => {
-      context.setIsHeaderFooterShow(true);
+      // Chỉ hiện lại header/footer khi không chuyển đến trang đăng ký
+      if (!window.location.pathname.includes("/signup")) {
+        context.setIsHeaderFooterShow(true);
+      }
     };
   }, [context]);
 
@@ -138,7 +143,13 @@ const SignIn = () => {
   };
 
   const handleCancel = () => {
+    context.setIsHeaderFooterShow(true);
     navigate("/");
+  };
+
+  const handleSignUp = () => {
+    // Không cần thay đổi trạng thái header/footer khi chuyển đến trang đăng ký
+    navigate("/signup");
   };
 
   return (
@@ -305,6 +316,7 @@ const SignIn = () => {
                   color="primary"
                   size="small"
                   sx={{ textTransform: "none" }}
+                  onClick={handleSignUp}
                 >
                   Đăng ký
                 </Button>
