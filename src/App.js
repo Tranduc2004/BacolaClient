@@ -34,6 +34,8 @@ import About from "./Pages/About";
 import Layout from "./Components/Layout";
 import PrivacyPolicy from "./Pages/PrivacyPolicy";
 import DataDeletion from "./Pages/DataDeletion";
+import { ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 const MyContext = createContext();
 
 function App() {
@@ -148,6 +150,7 @@ function App() {
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
               <Route path="/data-deletion" element={<DataDeletion />} />
             </Routes>
+            <ToastContainer position="top-right" autoClose={4000} />
           </Layout>
         </BrowserRouter>
       </MyContext.Provider>
