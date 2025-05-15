@@ -10,6 +10,8 @@ import {
   CheckCheck,
 } from "lucide-react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
+import { toast } from "react-hot-toast";
 
 // Get userId from JWT token
 const getUserIdFromToken = () => {
@@ -96,6 +98,7 @@ const Toast = ({ message, icon, style }) => {
 };
 
 export default function Chat() {
+  const navigate = useNavigate();
   const [admins, setAdmins] = useState([]);
   const [filteredAdmins, setFilteredAdmins] = useState([]);
   const [selectedAdmin, setSelectedAdmin] = useState(null);
@@ -105,11 +108,34 @@ export default function Chat() {
   const [searchTerm, setSearchTerm] = useState("");
   const [unreadMessages, setUnreadMessages] = useState({});
   const [showSidebar, setShowSidebar] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [error, setError] = useState(null);
 
   const messagesEndRef = useRef(null);
   const prevMessagesLength = useRef({});
   const messageInputRef = useRef(null);
   const userId = getUserIdFromToken();
+  const messageIntervalRef = useRef(null);
+  const hasShownLoginToast = useRef(false);
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) {
+      if (!hasShownLoginToast.current) {
+        toast.error("Vui lòng đăng nhập để sử dụng tính năng chat", {
+          duration: 4000,
+        });
+        hasShownLoginToast.current = true;
+      }
+      setIsAuthenticated(false);
+      setError("Vui lòng đăng nhập để sử dụng tính năng chat");
+      navigate("/signin");
+      return;
+    }
+    setIsAuthenticated(true);
+    setError(null);
+    hasShownLoginToast.current = false; // reset khi đăng nhập lại
+  }, [navigate]);
 
   // Toast notification function
   const showToast = useCallback((message, options = {}) => {
@@ -118,6 +144,8 @@ export default function Chat() {
 
   // Fetch admin list
   const fetchAdmins = useCallback(async () => {
+    if (!isAuthenticated) return;
+
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get("/api/admin/users/superadmins", {
@@ -136,17 +164,26 @@ export default function Chat() {
         prevMessagesLength.current = initialLengths;
       }
     } catch (error) {
-      console.error("Error fetching superadmin list:", error);
-      showToast("Không thể lấy danh sách superadmin", {
-        icon: "❌",
-        style: {
-          borderRadius: "10px",
-          background: "#FEE2E2",
-          color: "#7F1D1D",
-        },
-      });
+      if (error.response?.status === 401) {
+        setIsAuthenticated(false);
+        setError("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại");
+        toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại", {
+          duration: 4000,
+        });
+        navigate("/signin");
+      } else {
+        console.error("Error fetching superadmin list:", error);
+        showToast("Không thể lấy danh sách superadmin", {
+          icon: "❌",
+          style: {
+            borderRadius: "10px",
+            background: "#FEE2E2",
+            color: "#7F1D1D",
+          },
+        });
+      }
     }
-  }, [showToast]);
+  }, [showToast, isAuthenticated, navigate]);
 
   // Scroll to bottom of messages
   const scrollToBottom = useCallback(() => {
@@ -156,13 +193,17 @@ export default function Chat() {
   // Fetch messages with selected admin
   const fetchMessages = useCallback(
     async (adminId) => {
-      if (!adminId) return;
+      if (!adminId || !isAuthenticated) return;
 
       try {
         setLoading(true);
         const token = localStorage.getItem("token");
+        if (!token) {
+          throw new Error("Không tìm thấy token xác thực");
+        }
+
         const response = await axios.get("/api/messages/user", {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         if (response.data.success) {
@@ -252,20 +293,31 @@ export default function Chat() {
           }
         }
       } catch (error) {
-        console.error("Error fetching messages:", error);
-        showToast("Không thể lấy tin nhắn", {
-          icon: "❌",
-          style: {
-            borderRadius: "10px",
-            background: "#FEE2E2",
-            color: "#7F1D1D",
-          },
-        });
+        if (error.response?.status === 401) {
+          setIsAuthenticated(false);
+          setError("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại");
+          toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại", {
+            duration: 4000,
+          });
+          navigate("/signin");
+        } else {
+          console.error("Error fetching messages:", error);
+          setError("Không thể lấy tin nhắn. Vui lòng thử lại sau");
+        }
       } finally {
         setLoading(false);
       }
     },
-    [userId, messages.length, selectedAdmin, admins, showToast, scrollToBottom]
+    [
+      userId,
+      messages.length,
+      selectedAdmin,
+      admins,
+      showToast,
+      scrollToBottom,
+      isAuthenticated,
+      navigate,
+    ]
   );
 
   // Send new message
@@ -307,10 +359,16 @@ export default function Chat() {
 
   // Fetch unread messages count
   const fetchUnreadMessages = useCallback(async () => {
+    if (!isAuthenticated) return;
+
     try {
       const token = localStorage.getItem("token");
+      if (!token) {
+        throw new Error("Không tìm thấy token xác thực");
+      }
+
       const response = await axios.get("/api/messages/user/unread", {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: { Authorization: `Bearer ${token}` },
       });
 
       if (response.data.success) {
@@ -321,17 +379,32 @@ export default function Chat() {
         );
       }
     } catch (error) {
-      console.error("Error fetching unread messages:", error);
+      if (error.response?.status === 401) {
+        setIsAuthenticated(false);
+        setError("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại");
+        toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại", {
+          duration: 4000,
+        });
+        navigate("/signin");
+      } else {
+        console.error("Error fetching unread messages:", error);
+      }
     }
-  }, []);
+  }, [isAuthenticated, navigate]);
 
   // Mark messages as read
   const markMessagesAsRead = useCallback(
     async (adminId) => {
+      if (!isAuthenticated) return;
+
       try {
         const token = localStorage.getItem("token");
+        if (!token) {
+          throw new Error("Không tìm thấy token xác thực");
+        }
+
         await axios.put(`/api/messages/read/${adminId}`, null, {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          headers: { Authorization: `Bearer ${token}` },
         });
 
         setUnreadMessages((prev) => {
@@ -345,10 +418,19 @@ export default function Chat() {
           JSON.stringify({ ...unreadMessages, [adminId]: undefined })
         );
       } catch (error) {
-        console.error("Error marking messages as read:", error);
+        if (error.response?.status === 401) {
+          setIsAuthenticated(false);
+          setError("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại");
+          toast.error("Phiên đăng nhập đã hết hạn. Vui lòng đăng nhập lại", {
+            duration: 4000,
+          });
+          navigate("/signin");
+        } else {
+          console.error("Error marking messages as read:", error);
+        }
       }
     },
-    [unreadMessages]
+    [unreadMessages, isAuthenticated, navigate]
   );
 
   // Search for admin
@@ -375,14 +457,16 @@ export default function Chat() {
   // Handle admin selection
   const handleAdminSelect = useCallback(
     (admin) => {
+      if (!isAuthenticated) {
+        // KHÔNG gọi toast ở đây nữa!
+        navigate("/signin");
+        return;
+      }
       setSelectedAdmin(admin);
       markMessagesAsRead(admin._id);
-
-      if (window.innerWidth < 768) {
-        setShowSidebar(false);
-      }
+      if (window.innerWidth < 768) setShowSidebar(false);
     },
-    [markMessagesAsRead]
+    [markMessagesAsRead, isAuthenticated, navigate]
   );
 
   // Group messages by date
@@ -420,28 +504,72 @@ export default function Chat() {
     );
   }, [groupMessagesByDate]);
 
-  // Initial setup
+  // Initial setup - chỉ chạy khi đã xác thực
   useEffect(() => {
+    if (!isAuthenticated) return;
+
     fetchAdmins();
     fetchUnreadMessages();
 
     // Set interval to update unread messages every 30 seconds
     const interval = setInterval(fetchUnreadMessages, 30000);
     return () => clearInterval(interval);
-  }, [fetchAdmins, fetchUnreadMessages]);
+  }, [fetchAdmins, fetchUnreadMessages, isAuthenticated]);
 
-  // Fetch messages when selected admin changes
+  // Fetch messages when selected admin changes - chỉ chạy khi đã xác thực
   useEffect(() => {
-    if (!selectedAdmin) return;
+    if (!selectedAdmin || !isAuthenticated) {
+      // Clear interval nếu chưa xác thực
+      if (messageIntervalRef.current) {
+        clearInterval(messageIntervalRef.current);
+        messageIntervalRef.current = null;
+      }
+      return;
+    }
 
-    fetchMessages(selectedAdmin._id); // Fetch immediately when admin is selected
+    // Clear any existing interval
+    if (messageIntervalRef.current) {
+      clearInterval(messageIntervalRef.current);
+    }
 
-    const interval = setInterval(() => {
+    // Fetch immediately
+    fetchMessages(selectedAdmin._id);
+
+    // Set up new interval
+    messageIntervalRef.current = setInterval(() => {
       fetchMessages(selectedAdmin._id);
-    }, 5000); // Poll every 5 seconds
+    }, 5000);
 
-    return () => clearInterval(interval);
-  }, [selectedAdmin, fetchMessages]);
+    // Cleanup
+    return () => {
+      if (messageIntervalRef.current) {
+        clearInterval(messageIntervalRef.current);
+        messageIntervalRef.current = null;
+      }
+    };
+  }, [selectedAdmin, fetchMessages, isAuthenticated]);
+
+  if (!isAuthenticated) {
+    return (
+      <div className="h-screen flex flex-col items-center justify-center bg-gray-50 p-4">
+        <div className="w-20 h-20 rounded-full bg-blue-100 flex items-center justify-center mb-6">
+          <MessageCircle size={40} className="text-blue-500" />
+        </div>
+        <h2 className="text-2xl font-bold text-gray-800 mb-2">
+          Vui lòng đăng nhập
+        </h2>
+        <p className="text-gray-500 text-center max-w-md mb-4">
+          {error || "Bạn cần đăng nhập để sử dụng tính năng chat"}
+        </p>
+        <button
+          className="bg-blue-500 text-white px-6 py-2 rounded-lg hover:bg-blue-600 transition-colors"
+          onClick={() => navigate("/signin")}
+        >
+          Đăng nhập ngay
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen max-h-screen flex bg-gray-50">
