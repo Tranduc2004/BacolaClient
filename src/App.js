@@ -5,8 +5,6 @@ import "./App.css";
 import "bootstrap/dist/css/bootstrap.min.css";
 import Home from "./Pages/Home";
 import Listing from "./Pages/Listing";
-import Header from "./Components/Header";
-import Footer from "./Components/Footer";
 import ProductDetails from "./Pages/ProductDetails";
 import Cart from "./Pages/Cart";
 import SignIn from "./Pages/SignIn";
