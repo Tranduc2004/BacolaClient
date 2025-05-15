@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Mail, MapPin, Phone } from "lucide-react";
-import axios from "axios";
 import { toast } from "react-toastify";
+import { api } from "./path/to/api"; // Đường dẫn đến file api.js của bạn
 
 const About = () => {
   const [contactInfo, setContactInfo] = useState({
@@ -26,7 +26,7 @@ const About = () => {
   useEffect(() => {
     const fetchContactInfo = async () => {
       try {
-        const response = await axios.get("/api/about/contact-info");
+        const response = await api.get("/about/contact-info");
         setContactInfo(response.data);
       } catch (error) {
         console.error("Lỗi khi lấy thông tin liên hệ:", error);
@@ -51,7 +51,7 @@ const About = () => {
     setLoading(true);
 
     try {
-      await axios.post("/api/about/feedback", feedback);
+      await api.post("/about/feedback", feedback);
       toast.success("Gửi tin nhắn thành công!");
       // Reset form
       setFeedback({
