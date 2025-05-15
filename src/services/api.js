@@ -2,7 +2,7 @@ import axios from "axios";
 
 // Tạo instance axios cho tất cả API
 const api = axios.create({
-  baseURL: "http://localhost:4000/api",
+  baseURL: "https://bacola.onrender.com/api",
   timeout: 30000,
   headers: {
     "Content-Type": "application/json",
