@@ -33,6 +33,7 @@ import Chat from "./Pages/Chat";
 import About from "./Pages/About";
 import Layout from "./Components/Layout";
 import PrivacyPolicy from "./Pages/PrivacyPolicy";
+import DataDeletion from "./Pages/DataDeletion";
 const MyContext = createContext();
 
 function App() {
@@ -145,6 +146,7 @@ function App() {
               <Route path="/chat" element={<Chat />} />
               <Route path="/about" element={<About />} />
               <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+              <Route path="/data-deletion" element={<DataDeletion />} />
             </Routes>
           </Layout>
         </BrowserRouter>
