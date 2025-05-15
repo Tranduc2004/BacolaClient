@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Mail, MapPin, Phone } from "lucide-react";
+import { api } from "../../services/api";
 import { toast } from "react-toastify";
-import { api }  from "../../services/api";
 
 const About = () => {
   const [contactInfo, setContactInfo] = useState({
@@ -21,15 +21,24 @@ const About = () => {
   });
 
   const [loading, setLoading] = useState(false);
+  const [loadingContact, setLoadingContact] = useState(true);
 
   // Lấy thông tin liên hệ
   useEffect(() => {
     const fetchContactInfo = async () => {
+      setLoadingContact(true);
       try {
         const response = await api.get("/about/contact-info");
-        setContactInfo(response.data);
+        if (response) {
+          setContactInfo(response);
+        } else {
+          toast.error("Không thể lấy thông tin liên hệ");
+        }
       } catch (error) {
         console.error("Lỗi khi lấy thông tin liên hệ:", error);
+        toast.error("Không thể lấy thông tin liên hệ");
+      } finally {
+        setLoadingContact(false);
       }
     };
 
@@ -51,15 +60,17 @@ const About = () => {
     setLoading(true);
 
     try {
-      await api.post("/about/feedback", feedback);
-      toast.success("Gửi tin nhắn thành công!");
-      // Reset form
-      setFeedback({
-        name: "",
-        email: "",
-        subject: "",
-        message: "",
-      });
+      const response = await api.post("/about/feedback", feedback);
+      if (response) {
+        toast.success("Gửi tin nhắn thành công!");
+        // Reset form
+        setFeedback({
+          name: "",
+          email: "",
+          subject: "",
+          message: "",
+        });
+      }
     } catch (error) {
       toast.error("Có lỗi xảy ra khi gửi tin nhắn!");
       console.error("Lỗi khi gửi tin nhắn:", error);
@@ -67,6 +78,15 @@ const About = () => {
       setLoading(false);
     }
   };
+
+  if (loadingContact) {
+    return (
+      <div className="max-w-7xl mx-auto px-4 py-12 text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto"></div>
+        <p className="mt-4 text-gray-600">Đang tải thông tin...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto px-4 py-12">
@@ -92,9 +112,11 @@ const About = () => {
             <MapPin className="h-6 w-6 text-white" />
           </div>
           <h3 className="font-medium mb-2" style={{ color: "#00aaff" }}>
-            {contactInfo.address}
+            {contactInfo.address || "Đang cập nhật..."}
           </h3>
-          <p className="text-gray-500">{contactInfo.location}</p>
+          <p className="text-gray-500">
+            {contactInfo.location || "Đang cập nhật..."}
+          </p>
         </div>
 
         {/* Phone Card */}
@@ -106,9 +128,11 @@ const About = () => {
             <Phone className="h-6 w-6 text-white" />
           </div>
           <h3 className="font-medium mb-2" style={{ color: "#00aaff" }}>
-            {contactInfo.phone}
+            {contactInfo.phone || "Đang cập nhật..."}
           </h3>
-          <p className="text-gray-500">{contactInfo.phoneNote}</p>
+          <p className="text-gray-500">
+            {contactInfo.phoneNote || "Đang cập nhật..."}
+          </p>
         </div>
 
         {/* Email Card */}
@@ -120,9 +144,11 @@ const About = () => {
             <Mail className="h-6 w-6 text-white" />
           </div>
           <h3 className="font-medium mb-2" style={{ color: "#00aaff" }}>
-            {contactInfo.email}
+            {contactInfo.email || "Đang cập nhật..."}
           </h3>
-          <p className="text-gray-500">{contactInfo.emailNote}</p>
+          <p className="text-gray-500">
+            {contactInfo.emailNote || "Đang cập nhật..."}
+          </p>
         </div>
       </div>
 
