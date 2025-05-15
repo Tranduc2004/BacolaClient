@@ -9,7 +9,7 @@ import { MdPhone } from "react-icons/md";
 import { FaInstagram } from "react-icons/fa";
 import { FaFacebook } from "react-icons/fa";
 import { FaTwitter } from "react-icons/fa";
-import axios from "axios";
+import { api } from "../../services/api";
 
 const Footer = () => {
   const [footerData, setFooterData] = useState(null);
@@ -18,13 +18,10 @@ const Footer = () => {
   useEffect(() => {
     const fetchFooterData = async () => {
       try {
-        // Sử dụng URL tương đối để tự động lấy domain hiện tại
-        const response = await axios.get("/api/footer", {
-          baseURL: window.location.origin // Đảm bảo luôn lấy domain hiện tại
-        });
-        
-        if (response.data.success) {
-          setFooterData(response.data.data);
+        // Sử dụng instance api đã được cấu hình sẵn
+        const response = await api.get("/footer");
+        if (response.success) {
+          setFooterData(response.data);
         }
       } catch (error) {
         console.error("Lỗi khi lấy dữ liệu footer:", error);
