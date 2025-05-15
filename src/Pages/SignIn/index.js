@@ -85,11 +85,11 @@ const SignIn = () => {
   // Ẩn header và footer khi vào trang đăng nhập
   useEffect(() => {
     context.setIsHeaderFooterShow(false);
-    // Hiện lại header và footer khi unmount component
+
     return () => {
       context.setIsHeaderFooterShow(true);
     };
-  }, []); // Chỉ chạy 1 lần khi mount
+  }, [context]);
 
   const handleChange = (e) => {
     setFormData({

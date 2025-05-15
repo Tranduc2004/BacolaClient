@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import {
   MessageCircle,
   Search,
@@ -10,11 +10,9 @@ import {
   CheckCheck,
 } from "lucide-react";
 import axios from "axios";
-import { toast } from "react-toastify";
-import "react-toastify/dist/ReactToastify.css";
 
-// Giải mã JWT để lấy userId
-function getUserIdFromToken() {
+// Get userId from JWT token
+const getUserIdFromToken = () => {
   const token = localStorage.getItem("token");
   if (!token) return null;
   try {
@@ -23,19 +21,19 @@ function getUserIdFromToken() {
   } catch {
     return null;
   }
-}
+};
 
-// Format thời gian
-function formatTime(dateString) {
+// Format time string
+const formatTime = (dateString) => {
   const date = new Date(dateString);
   return date.toLocaleTimeString("vi-VN", {
     hour: "2-digit",
     minute: "2-digit",
   });
-}
+};
 
-// Format ngày tháng
-function formatDate(dateString) {
+// Format date string
+const formatDate = (dateString) => {
   const date = new Date(dateString);
   const today = new Date();
   const yesterday = new Date(today);
@@ -52,7 +50,50 @@ function formatDate(dateString) {
       year: "numeric",
     });
   }
-}
+};
+
+// Toast notification component
+const Toast = ({ message, icon, style }) => {
+  const toastContainer = document.getElementById("toast-container");
+  if (!toastContainer) {
+    const container = document.createElement("div");
+    container.id = "toast-container";
+    container.style.position = "fixed";
+    container.style.top = "20px";
+    container.style.right = "20px";
+    container.style.zIndex = "9999";
+    document.body.appendChild(container);
+  }
+
+  const toast = document.createElement("div");
+  toast.className = "toast-notification";
+  toast.style.padding = "12px 16px";
+  toast.style.margin = "8px 0";
+  toast.style.borderRadius = "8px";
+  toast.style.boxShadow = "0 4px 6px rgba(0,0,0,0.1)";
+  toast.style.animation = "fadeIn 0.3s, fadeOut 0.3s 3.7s";
+  toast.style.display = "flex";
+  toast.style.alignItems = "center";
+  toast.style.background = style?.background || "#ECFDF5";
+  toast.style.color = style?.color || "#065F46";
+
+  if (icon) {
+    const iconElement = document.createElement("span");
+    iconElement.style.marginRight = "8px";
+    iconElement.textContent = icon;
+    toast.appendChild(iconElement);
+  }
+
+  const text = document.createElement("span");
+  text.textContent = message;
+  toast.appendChild(text);
+
+  document.getElementById("toast-container").appendChild(toast);
+
+  setTimeout(() => {
+    toast.remove();
+  }, 4000);
+};
 
 export default function Chat() {
   const [admins, setAdmins] = useState([]);
@@ -64,23 +105,30 @@ export default function Chat() {
   const [searchTerm, setSearchTerm] = useState("");
   const [unreadMessages, setUnreadMessages] = useState({});
   const [showSidebar, setShowSidebar] = useState(true);
+
   const messagesEndRef = useRef(null);
-  const userId = getUserIdFromToken();
   const prevMessagesLength = useRef({});
   const messageInputRef = useRef(null);
+  const userId = getUserIdFromToken();
 
-  // Lấy danh sách superadmin
-  const fetchAdmins = async () => {
+  // Toast notification function
+  const showToast = useCallback((message, options = {}) => {
+    Toast({ message, icon: options.icon, style: options.style });
+  }, []);
+
+  // Fetch admin list
+  const fetchAdmins = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get("/api/admin/users/superadmins", {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
+
       if (response.data && response.data.data) {
         setAdmins(response.data.data);
         setFilteredAdmins(response.data.data);
 
-        // Khởi tạo prevMessagesLength cho mỗi admin
+        // Initialize prevMessagesLength for each admin
         const initialLengths = {};
         response.data.data.forEach((admin) => {
           initialLengths[admin._id] = 0;
@@ -88,108 +136,8 @@ export default function Chat() {
         prevMessagesLength.current = initialLengths;
       }
     } catch (error) {
-      console.error("Lỗi khi lấy danh sách superadmin:", error);
-      toast.error("Không thể lấy danh sách superadmin");
-    }
-  };
-
-  // Lấy tin nhắn với admin được chọn
-  const fetchMessages = async (adminId) => {
-    try {
-      setLoading(true);
-      const token = localStorage.getItem("token");
-      const response = await axios.get("/api/messages/user", {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (response.data.success) {
-        const filteredMessages = response.data.data.filter(
-          (msg) =>
-            (msg.sender._id === userId && msg.receiver._id === adminId) ||
-            (msg.sender._id === adminId && msg.receiver._id === userId)
-        );
-
-        // Kiểm tra tin nhắn mới
-        const hasNewMessages = filteredMessages.length > messages.length;
-        const lastMessage = filteredMessages[filteredMessages.length - 1];
-        const isNewMessageFromAdmin =
-          hasNewMessages && lastMessage?.senderType === "superadmin";
-        const isAtBottom =
-          messagesEndRef.current?.getBoundingClientRect().top <=
-          window.innerHeight + 100;
-
-        // Chỉ cập nhật tin nhắn nếu có tin nhắn mới
-        if (hasNewMessages) {
-          if (
-            prevMessagesLength.current[adminId] > 0 &&
-            filteredMessages.length > prevMessagesLength.current[adminId]
-          ) {
-            const newMessages = filteredMessages.slice(
-              prevMessagesLength.current[adminId]
-            );
-            const unreadFromAdmin = newMessages.filter(
-              (msg) => msg.senderType === "superadmin"
-            ).length;
-
-            if (unreadFromAdmin > 0) {
-              // Cập nhật số tin nhắn chưa đọc
-              const currentUnread = JSON.parse(
-                localStorage.getItem("unread_messages") || "{}"
-              );
-              currentUnread[adminId] =
-                (currentUnread[adminId] || 0) + unreadFromAdmin;
-              localStorage.setItem(
-                "unread_messages",
-                JSON.stringify(currentUnread)
-              );
-              setUnreadMessages(currentUnread);
-
-              // Hiển thị thông báo
-              if (document.visibilityState !== "visible") {
-                toast(
-                  `Bạn có ${unreadFromAdmin} tin nhắn mới từ ${
-                    admins.find((a) => a._id === adminId)?.name
-                  }`,
-                  {
-                    icon: "🔔",
-                    style: {
-                      borderRadius: "10px",
-                      background: "#E0F2FE",
-                      color: "#0C4A6E",
-                    },
-                  }
-                );
-              }
-            }
-          }
-
-          prevMessagesLength.current[adminId] = filteredMessages.length;
-          setMessages(filteredMessages);
-
-          // Chỉ cuộn xuống khi có tin nhắn mới từ admin và người dùng đang ở gần cuối
-          if (isNewMessageFromAdmin && isAtBottom) {
-            setTimeout(scrollToBottom, 100);
-          }
-        }
-
-        // Reset số tin nhắn chưa đọc khi đang xem chat với admin này
-        if (
-          selectedAdmin?._id === adminId &&
-          document.visibilityState === "visible"
-        ) {
-          const currentUnread = JSON.parse(
-            localStorage.getItem("unread_messages") || "{}"
-          );
-          delete currentUnread[adminId];
-          localStorage.setItem(
-            "unread_messages",
-            JSON.stringify(currentUnread)
-          );
-          setUnreadMessages(currentUnread);
-        }
-      }
-    } catch (error) {
-      console.error("Lỗi khi lấy tin nhắn:", error);
-      toast("Không thể lấy tin nhắn", {
+      console.error("Error fetching superadmin list:", error);
+      showToast("Không thể lấy danh sách superadmin", {
         icon: "❌",
         style: {
           borderRadius: "10px",
@@ -197,13 +145,131 @@ export default function Chat() {
           color: "#7F1D1D",
         },
       });
-    } finally {
-      setLoading(false);
     }
-  };
+  }, [showToast]);
 
-  // Gửi tin nhắn mới
-  const sendMessage = async () => {
+  // Scroll to bottom of messages
+  const scrollToBottom = useCallback(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, []);
+
+  // Fetch messages with selected admin
+  const fetchMessages = useCallback(
+    async (adminId) => {
+      if (!adminId) return;
+
+      try {
+        setLoading(true);
+        const token = localStorage.getItem("token");
+        const response = await axios.get("/api/messages/user", {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+
+        if (response.data.success) {
+          const filteredMessages = response.data.data.filter(
+            (msg) =>
+              (msg.sender._id === userId && msg.receiver._id === adminId) ||
+              (msg.sender._id === adminId && msg.receiver._id === userId)
+          );
+
+          // Check for new messages
+          const hasNewMessages = filteredMessages.length > messages.length;
+          const lastMessage = filteredMessages[filteredMessages.length - 1];
+          const isNewMessageFromAdmin =
+            hasNewMessages && lastMessage?.senderType === "superadmin";
+          const isAtBottom =
+            messagesEndRef.current?.getBoundingClientRect().top <=
+            window.innerHeight + 100;
+
+          // Update messages only if there are new ones
+          if (hasNewMessages) {
+            if (
+              prevMessagesLength.current[adminId] > 0 &&
+              filteredMessages.length > prevMessagesLength.current[adminId]
+            ) {
+              const newMessages = filteredMessages.slice(
+                prevMessagesLength.current[adminId]
+              );
+              const unreadFromAdmin = newMessages.filter(
+                (msg) => msg.senderType === "superadmin"
+              ).length;
+
+              if (unreadFromAdmin > 0) {
+                // Update unread messages count
+                const currentUnread = JSON.parse(
+                  localStorage.getItem("unread_messages") || "{}"
+                );
+                currentUnread[adminId] =
+                  (currentUnread[adminId] || 0) + unreadFromAdmin;
+                localStorage.setItem(
+                  "unread_messages",
+                  JSON.stringify(currentUnread)
+                );
+                setUnreadMessages(currentUnread);
+
+                // Show notification when document is not visible
+                if (document.visibilityState !== "visible") {
+                  const adminName =
+                    admins.find((a) => a._id === adminId)?.name || "Admin";
+                  showToast(
+                    `Bạn có ${unreadFromAdmin} tin nhắn mới từ ${adminName}`,
+                    {
+                      icon: "🔔",
+                      style: {
+                        borderRadius: "10px",
+                        background: "#E0F2FE",
+                        color: "#0C4A6E",
+                      },
+                    }
+                  );
+                }
+              }
+            }
+
+            prevMessagesLength.current[adminId] = filteredMessages.length;
+            setMessages(filteredMessages);
+
+            // Scroll down only for new messages from admin when user is near bottom
+            if (isNewMessageFromAdmin && isAtBottom) {
+              setTimeout(scrollToBottom, 100);
+            }
+          }
+
+          // Reset unread count when viewing this admin's chat
+          if (
+            selectedAdmin?._id === adminId &&
+            document.visibilityState === "visible"
+          ) {
+            const currentUnread = JSON.parse(
+              localStorage.getItem("unread_messages") || "{}"
+            );
+            delete currentUnread[adminId];
+            localStorage.setItem(
+              "unread_messages",
+              JSON.stringify(currentUnread)
+            );
+            setUnreadMessages(currentUnread);
+          }
+        }
+      } catch (error) {
+        console.error("Error fetching messages:", error);
+        showToast("Không thể lấy tin nhắn", {
+          icon: "❌",
+          style: {
+            borderRadius: "10px",
+            background: "#FEE2E2",
+            color: "#7F1D1D",
+          },
+        });
+      } finally {
+        setLoading(false);
+      }
+    },
+    [userId, messages.length, selectedAdmin, admins, showToast, scrollToBottom]
+  );
+
+  // Send new message
+  const sendMessage = useCallback(async () => {
     if (!newMessage.trim() || !selectedAdmin) return;
 
     try {
@@ -223,28 +289,30 @@ export default function Chat() {
         setMessages((prevMessages) => [...prevMessages, response.data.data]);
         setNewMessage("");
         messageInputRef.current?.focus();
-        // Luôn cuộn xuống khi gửi tin nhắn mới
+        // Always scroll down after sending a new message
         setTimeout(scrollToBottom, 100);
-        toast.success("Gửi tin nhắn thành công!");
       }
     } catch (error) {
-      console.error("Lỗi khi gửi tin nhắn:", error);
-      toast.error("Không thể gửi tin nhắn");
+      console.error("Error sending message:", error);
+      showToast("Không thể gửi tin nhắn", {
+        icon: "❌",
+        style: {
+          borderRadius: "10px",
+          background: "#FEE2E2",
+          color: "#7F1D1D",
+        },
+      });
     }
-  };
+  }, [newMessage, selectedAdmin, scrollToBottom, showToast]);
 
-  // Cuộn xuống tin nhắn mới nhất
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
-
-  // Hàm lấy số tin nhắn chưa đọc
-  const fetchUnreadMessages = async () => {
+  // Fetch unread messages count
+  const fetchUnreadMessages = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
       const response = await axios.get("/api/messages/user/unread", {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
+
       if (response.data.success) {
         setUnreadMessages(response.data.data);
         localStorage.setItem(
@@ -253,47 +321,72 @@ export default function Chat() {
         );
       }
     } catch (error) {
-      console.error("Lỗi khi lấy số tin nhắn chưa đọc:", error);
+      console.error("Error fetching unread messages:", error);
     }
-  };
+  }, []);
 
-  // Hàm đánh dấu tin nhắn đã đọc
-  const markMessagesAsRead = async (adminId) => {
-    try {
-      const token = localStorage.getItem("token");
-      await axios.put(`/api/messages/read/${adminId}`, null, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      setUnreadMessages((prev) => {
-        const newState = { ...prev };
-        delete newState[adminId];
-        return newState;
-      });
-      localStorage.setItem("unread_messages", JSON.stringify(unreadMessages));
-    } catch (error) {
-      console.error("Lỗi khi đánh dấu tin nhắn đã đọc:", error);
-    }
-  };
+  // Mark messages as read
+  const markMessagesAsRead = useCallback(
+    async (adminId) => {
+      try {
+        const token = localStorage.getItem("token");
+        await axios.put(`/api/messages/read/${adminId}`, null, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
 
-  // Tìm kiếm admin
-  const handleSearch = (e) => {
-    const term = e.target.value.toLowerCase();
-    setSearchTerm(term);
-    if (term.trim() === "") {
-      setFilteredAdmins(admins);
-    } else {
-      setFilteredAdmins(
-        admins.filter(
-          (admin) =>
-            (admin.name?.toLowerCase() || "").includes(term) ||
-            (admin.email?.toLowerCase() || "").includes(term)
-        )
-      );
-    }
-  };
+        setUnreadMessages((prev) => {
+          const newState = { ...prev };
+          delete newState[adminId];
+          return newState;
+        });
 
-  // Tạo danh sách ngày
-  const groupMessagesByDate = () => {
+        localStorage.setItem(
+          "unread_messages",
+          JSON.stringify({ ...unreadMessages, [adminId]: undefined })
+        );
+      } catch (error) {
+        console.error("Error marking messages as read:", error);
+      }
+    },
+    [unreadMessages]
+  );
+
+  // Search for admin
+  const handleSearch = useCallback(
+    (e) => {
+      const term = e.target.value.toLowerCase();
+      setSearchTerm(term);
+
+      if (term.trim() === "") {
+        setFilteredAdmins(admins);
+      } else {
+        setFilteredAdmins(
+          admins.filter(
+            (admin) =>
+              (admin.name?.toLowerCase() || "").includes(term) ||
+              (admin.email?.toLowerCase() || "").includes(term)
+          )
+        );
+      }
+    },
+    [admins]
+  );
+
+  // Handle admin selection
+  const handleAdminSelect = useCallback(
+    (admin) => {
+      setSelectedAdmin(admin);
+      markMessagesAsRead(admin._id);
+
+      if (window.innerWidth < 768) {
+        setShowSidebar(false);
+      }
+    },
+    [markMessagesAsRead]
+  );
+
+  // Group messages by date
+  const groupMessagesByDate = useCallback(() => {
     const groups = {};
     messages.forEach((message) => {
       const date = new Date(message.createdAt).toDateString();
@@ -303,53 +396,56 @@ export default function Chat() {
       groups[date].push(message);
     });
     return groups;
-  };
+  }, [messages]);
 
-  // Sắp xếp các ngày theo thứ tự tăng dần (ngày cũ trước, ngày mới sau)
-  const sortedDates = Object.keys(groupMessagesByDate()).sort(
-    (a, b) => new Date(a) - new Date(b)
+  // Get last message for an admin
+  const getLastMessage = useCallback(
+    (adminId) => {
+      const adminMessages = messages.filter(
+        (msg) =>
+          (msg.sender._id === userId && msg.receiver._id === adminId) ||
+          (msg.sender._id === adminId && msg.receiver._id === userId)
+      );
+
+      if (adminMessages.length === 0) return null;
+      return adminMessages[adminMessages.length - 1];
+    },
+    [messages, userId]
   );
 
-  // Cập nhật useEffect để gọi fetchUnreadMessages
+  // Sort dates in ascending order (oldest first, newest last)
+  const sortedDates = useCallback(() => {
+    return Object.keys(groupMessagesByDate()).sort(
+      (a, b) => new Date(a) - new Date(b)
+    );
+  }, [groupMessagesByDate]);
+
+  // Initial setup
   useEffect(() => {
     fetchAdmins();
     fetchUnreadMessages();
-    // Thiết lập interval để cập nhật số tin nhắn chưa đọc mỗi 30 giây
+
+    // Set interval to update unread messages every 30 seconds
     const interval = setInterval(fetchUnreadMessages, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [fetchAdmins, fetchUnreadMessages]);
 
-  // Cập nhật hàm handleAdminSelect
-  const handleAdminSelect = (admin) => {
-    setSelectedAdmin(admin);
-    markMessagesAsRead(admin._id);
-    if (window.innerWidth < 768) {
-      setShowSidebar(false);
-    }
-  };
-
+  // Fetch messages when selected admin changes
   useEffect(() => {
     if (!selectedAdmin) return;
-    fetchMessages(selectedAdmin._id); // Gọi ngay khi chọn admin
+
+    fetchMessages(selectedAdmin._id); // Fetch immediately when admin is selected
+
     const interval = setInterval(() => {
       fetchMessages(selectedAdmin._id);
-    }, 5000); // Tăng lên 5 giây
-    return () => clearInterval(interval);
-  }, [selectedAdmin]);
+    }, 5000); // Poll every 5 seconds
 
-  const getLastMessage = (adminId) => {
-    const adminMessages = messages.filter(
-      (msg) =>
-        (msg.sender._id === userId && msg.receiver._id === adminId) ||
-        (msg.sender._id === adminId && msg.receiver._id === userId)
-    );
-    if (adminMessages.length === 0) return null;
-    return adminMessages[adminMessages.length - 1];
-  };
+    return () => clearInterval(interval);
+  }, [selectedAdmin, fetchMessages]);
 
   return (
     <div className="h-screen max-h-screen flex bg-gray-50">
-      {/* Sidebar - Danh sách admin */}
+      {/* Sidebar - Admin list */}
       <div
         className={`${
           showSidebar ? "block" : "hidden"
@@ -426,7 +522,7 @@ export default function Chat() {
         </div>
       </div>
 
-      {/* Khu vực chat */}
+      {/* Chat area */}
       <div className="flex-1 flex flex-col">
         {selectedAdmin ? (
           <>
@@ -462,7 +558,7 @@ export default function Chat() {
               </div>
             </div>
 
-            {/* Tin nhắn */}
+            {/* Messages */}
             <div className="flex-1 overflow-y-auto p-4 bg-gray-50">
               {loading ? (
                 <div className="flex justify-center items-center h-full">
@@ -481,7 +577,7 @@ export default function Chat() {
                   </p>
                 </div>
               ) : (
-                sortedDates.map((date) => (
+                sortedDates().map((date) => (
                   <div key={date} className="mb-6">
                     <div className="flex justify-center mb-4">
                       <span className="bg-gray-200 text-gray-700 text-xs px-3 py-1 rounded-full">
@@ -546,7 +642,7 @@ export default function Chat() {
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input gửi tin nhắn */}
+            {/* Message input */}
             <div className="p-4 border-t border-gray-200 bg-white">
               <div className="flex gap-2">
                 <input
@@ -600,7 +696,7 @@ export default function Chat() {
         )}
       </div>
 
-      {/* CSS cho animations */}
+      {/* CSS for animations */}
       <style>
         {`
           @keyframes fadeIn {
