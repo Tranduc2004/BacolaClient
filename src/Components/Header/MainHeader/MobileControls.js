@@ -4,6 +4,7 @@ import { IoClose } from "react-icons/io5";
 import { IoBagOutline } from "react-icons/io5";
 import { CircleCartButton } from "../common/CircleButtons";
 import CartBadge from "../common/CartBadge";
+import { Link } from "react-router-dom";
 
 const MobileControls = ({
   toggleMobileSearch,
@@ -21,12 +22,14 @@ const MobileControls = ({
       </button>
 
       <div style={{ padding: "8px" }}>
-        <CircleCartButton>
-          <IoBagOutline
-            style={{ width: "24px", height: "24px", color: "#ea2b0f" }}
-          />
-          <CartBadge count={1} />
-        </CircleCartButton>
+        <Link to="/cart" style={{ textDecoration: "none" }}>
+          <CircleCartButton className="blue-circle-button">
+            <IoBagOutline
+              style={{ width: "24px", height: "24px", color: "#ea2b0f" }}
+            />
+            <CartBadge />
+          </CircleCartButton>
+        </Link>
       </div>
 
       <button
