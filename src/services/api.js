@@ -687,7 +687,6 @@ export const cancelOrder = async (orderId) => {
   }
 };
 
-// API cho Google OAuth
 export const handleGoogleLogin = () => {
   window.location.href = `${api.defaults.baseURL}/auth/google`;
 };
