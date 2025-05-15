@@ -32,7 +32,7 @@ import FacebookCallback from "./Pages/FacebookCallback";
 import Chat from "./Pages/Chat";
 import About from "./Pages/About";
 import Layout from "./Components/Layout";
-
+import PrivacyPolicy from "./Pages/PrivacyPolicy";
 const MyContext = createContext();
 
 function App() {
@@ -144,6 +144,7 @@ function App() {
               <Route path="/myvoucher" element={<MyVoucher />} />
               <Route path="/chat" element={<Chat />} />
               <Route path="/about" element={<About />} />
+              <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             </Routes>
           </Layout>
         </BrowserRouter>
