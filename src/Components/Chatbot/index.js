@@ -9,6 +9,8 @@ import {
   CircularProgress,
   Tooltip,
   Paper,
+  useMediaQuery,
+  useTheme,
 } from "@mui/material";
 import SendIcon from "@mui/icons-material/Send";
 import { sendMessage } from "../../services/api";
@@ -22,6 +24,8 @@ const Chatbot = () => {
   const [showSuggestions, setShowSuggestions] = useState(true);
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down("sm"));
 
   // Focus input when chat opens
   useEffect(() => {
@@ -215,7 +219,14 @@ const Chatbot = () => {
   };
 
   return (
-    <Box sx={{ position: "fixed", bottom: 32, right: 32, zIndex: 50 }}>
+    <Box
+      sx={{
+        position: "fixed",
+        bottom: isMobile ? 80 : 32, // Điều chỉnh vị trí bottom cho mobile
+        right: isMobile ? 16 : 32, // Điều chỉnh vị trí right cho mobile
+        zIndex: 50,
+      }}
+    >
       <Tooltip title="Trợ lí ảo - Nhấn để chat" placement="left" arrow>
         <IconButton
           onClick={() => {
@@ -232,7 +243,7 @@ const Chatbot = () => {
           sx={{
             bgcolor: "#00aaff",
             color: "white",
-            p: 3,
+            p: isMobile ? 2 : 3, // Điều chỉnh padding cho mobile
             "&:hover": {
               bgcolor: "#0095e0",
               transform: "scale(1.1)",
@@ -240,7 +251,11 @@ const Chatbot = () => {
             transition: "transform 0.2s",
           }}
         >
-          {isOpen ? <FaTimes size={22} /> : <FaRobot size={22} />}
+          {isOpen ? (
+            <FaTimes size={isMobile ? 18 : 22} />
+          ) : (
+            <FaRobot size={isMobile ? 18 : 22} />
+          )}
         </IconButton>
       </Tooltip>
 
@@ -248,10 +263,10 @@ const Chatbot = () => {
         <Box
           sx={{
             position: "absolute",
-            bottom: 80,
+            bottom: isMobile ? 60 : 80, // Điều chỉnh vị trí bottom cho mobile
             right: 0,
-            width: 360,
-            height: 500,
+            width: isMobile ? "calc(100vw - 32px)" : 360, // Điều chỉnh width cho mobile
+            height: isMobile ? "calc(100vh - 200px)" : 500, // Điều chỉnh height cho mobile
             bgcolor: "background.paper",
             borderRadius: 1,
             boxShadow: 24,
@@ -272,8 +287,12 @@ const Chatbot = () => {
               alignItems: "center",
             }}
           >
-            <FaRobot size={28} style={{ marginRight: 8 }} />
-            <Typography variant="subtitle1" fontWeight="medium" fontSize={18}>
+            <FaRobot size={isMobile ? 24 : 28} style={{ marginRight: 8 }} />
+            <Typography
+              variant="subtitle1"
+              fontWeight="medium"
+              fontSize={isMobile ? 16 : 18}
+            >
               Chat với trợ lí ảo
             </Typography>
           </Box>
