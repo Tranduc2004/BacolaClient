@@ -18,7 +18,11 @@ const Footer = () => {
   useEffect(() => {
     const fetchFooterData = async () => {
       try {
-        const response = await axios.get("/api/footer");
+        // Sử dụng URL tương đối để tự động lấy domain hiện tại
+        const response = await axios.get("/api/footer", {
+          baseURL: window.location.origin // Đảm bảo luôn lấy domain hiện tại
+        });
+        
         if (response.data.success) {
           setFooterData(response.data.data);
         }
