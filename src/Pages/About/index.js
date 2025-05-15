@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Mail, MapPin, Phone } from "lucide-react";
 import { toast } from "react-toastify";
-import { api } from "./path/to/api"; // Đường dẫn đến file api.js của bạn
+import { api }  from "../../services/api";
 
 const About = () => {
   const [contactInfo, setContactInfo] = useState({
