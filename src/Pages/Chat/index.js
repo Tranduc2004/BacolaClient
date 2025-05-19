@@ -9,7 +9,7 @@ import {
   Video,
   CheckCheck,
 } from "lucide-react";
-import axios from "axios";
+import { api } from "../../services/api";
 import { useNavigate } from "react-router-dom";
 import { toast } from "react-hot-toast";
 
@@ -97,6 +97,14 @@ const Toast = ({ message, icon, style }) => {
   }, 4000);
 };
 
+// Thêm hàm tiện ích để gộp danh sách admin không trùng
+function mergeAdmins(apiAdmins, messageAdmins) {
+  const map = new Map();
+  apiAdmins.forEach((a) => map.set(a._id, a));
+  messageAdmins.forEach((a) => map.set(a._id, a));
+  return Array.from(map.values());
+}
+
 export default function Chat() {
   const navigate = useNavigate();
   const [admins, setAdmins] = useState([]);
@@ -117,6 +125,16 @@ export default function Chat() {
   const userId = getUserIdFromToken();
   const messageIntervalRef = useRef(null);
   const hasShownLoginToast = useRef(false);
+
+  // 2. Khi chọn admin, chỉ filter lại từ messages để hiển thị
+  const filteredMessagesByAdmin = useCallback(() => {
+    if (!selectedAdmin) return [];
+    return messages.filter(
+      (msg) =>
+        (msg.sender._id === userId && msg.receiver._id === selectedAdmin._id) ||
+        (msg.sender._id === selectedAdmin._id && msg.receiver._id === userId)
+    );
+  }, [messages, selectedAdmin, userId]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -147,18 +165,15 @@ export default function Chat() {
     if (!isAuthenticated) return;
 
     try {
-      const token = localStorage.getItem("token");
-      const response = await axios.get("/api/admin/users/superadmins", {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-
-      if (response.data && response.data.data) {
-        setAdmins(response.data.data);
-        setFilteredAdmins(response.data.data);
+      const response = await api.get("/admin/users/superadmins");
+      // response là object trả về từ server, có thể là { success, data }
+      if (response && response.data) {
+        setAdmins(response.data);
+        setFilteredAdmins(response.data);
 
         // Initialize prevMessagesLength for each admin
         const initialLengths = {};
-        response.data.data.forEach((admin) => {
+        response.data.forEach((admin) => {
           initialLengths[admin._id] = 0;
         });
         prevMessagesLength.current = initialLengths;
@@ -197,14 +212,7 @@ export default function Chat() {
 
       try {
         setLoading(true);
-        const token = localStorage.getItem("token");
-        if (!token) {
-          throw new Error("Không tìm thấy token xác thực");
-        }
-
-        const response = await axios.get("/api/messages/user", {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        const response = await api.get("/messages/user");
 
         if (response.data.success) {
           const filteredMessages = response.data.data.filter(
@@ -270,6 +278,25 @@ export default function Chat() {
             prevMessagesLength.current[adminId] = filteredMessages.length;
             setMessages(filteredMessages);
 
+            // Lấy thêm các admin đã từng chat từ messages
+            const messageAdmins = filteredMessages
+              .map((msg) => {
+                if (msg.senderType === "superadmin") {
+                  return msg.sender;
+                } else if (
+                  msg.receiver &&
+                  msg.receiver._id !== userId &&
+                  msg.receiverType === "superadmin"
+                ) {
+                  return msg.receiver;
+                }
+                return null;
+              })
+              .filter((a) => a && a._id);
+            // Gộp với danh sách admin từ API
+            setAdmins((prev) => mergeAdmins(prev, messageAdmins));
+            setFilteredAdmins((prev) => mergeAdmins(prev, messageAdmins));
+
             // Scroll down only for new messages from admin when user is near bottom
             if (isNewMessageFromAdmin && isAtBottom) {
               setTimeout(scrollToBottom, 100);
@@ -310,7 +337,7 @@ export default function Chat() {
     },
     [
       userId,
-      messages.length,
+      messages,
       selectedAdmin,
       admins,
       showToast,
@@ -320,29 +347,42 @@ export default function Chat() {
     ]
   );
 
-  // Send new message
+  // Hàm kiểm tra người dùng có đang ở gần cuối không
+  const isUserNearBottom = () => {
+    if (!messagesEndRef.current) return true;
+    const container = messagesEndRef.current.parentNode;
+    if (!container) return true;
+    const threshold = 120; // px
+    return (
+      container.scrollHeight - container.scrollTop - container.clientHeight <
+      threshold
+    );
+  };
+
+  // useEffect: Khi có tin nhắn mới, chỉ scroll nếu người dùng đang ở gần cuối hoặc vừa gửi tin nhắn
+  useEffect(() => {
+    if (!selectedAdmin) return;
+    if (isUserNearBottom()) {
+      scrollToBottom();
+    }
+    // eslint-disable-next-line
+  }, [filteredMessagesByAdmin().length, selectedAdmin]);
+
+  // Khi gửi tin nhắn, luôn scroll xuống cuối
   const sendMessage = useCallback(async () => {
     if (!newMessage.trim() || !selectedAdmin) return;
-
     try {
-      const token = localStorage.getItem("token");
-      const response = await axios.post(
-        "/api/messages/user/send",
-        {
-          receiverId: selectedAdmin._id,
-          content: newMessage,
-        },
-        {
-          headers: token ? { Authorization: `Bearer ${token}` } : {},
-        }
-      );
-
-      if (response.data.success) {
-        setMessages((prevMessages) => [...prevMessages, response.data.data]);
+      const response = await api.post("/messages/user/send", {
+        receiverId: selectedAdmin._id,
+        content: newMessage,
+      });
+      if (response.success) {
+        setMessages((prevMessages) => [...prevMessages, response.data]);
         setNewMessage("");
         messageInputRef.current?.focus();
-        // Always scroll down after sending a new message
-        setTimeout(scrollToBottom, 100);
+        setTimeout(() => {
+          scrollToBottom();
+        }, 100);
       }
     } catch (error) {
       console.error("Error sending message:", error);
@@ -362,14 +402,7 @@ export default function Chat() {
     if (!isAuthenticated) return;
 
     try {
-      const token = localStorage.getItem("token");
-      if (!token) {
-        throw new Error("Không tìm thấy token xác thực");
-      }
-
-      const response = await axios.get("/api/messages/user/unread", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const response = await api.get("/messages/user/unread");
 
       if (response.data.success) {
         setUnreadMessages(response.data.data);
@@ -398,14 +431,7 @@ export default function Chat() {
       if (!isAuthenticated) return;
 
       try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          throw new Error("Không tìm thấy token xác thực");
-        }
-
-        await axios.put(`/api/messages/read/${adminId}`, null, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
+        await api.put(`/messages/read/${adminId}`);
 
         setUnreadMessages((prev) => {
           const newState = { ...prev };
@@ -470,17 +496,20 @@ export default function Chat() {
   );
 
   // Group messages by date
-  const groupMessagesByDate = useCallback(() => {
-    const groups = {};
-    messages.forEach((message) => {
-      const date = new Date(message.createdAt).toDateString();
-      if (!groups[date]) {
-        groups[date] = [];
-      }
-      groups[date].push(message);
-    });
-    return groups;
-  }, [messages]);
+  const groupMessagesByDate = useCallback(
+    (msgs = messages) => {
+      const groups = {};
+      msgs.forEach((message) => {
+        const date = new Date(message.createdAt).toDateString();
+        if (!groups[date]) {
+          groups[date] = [];
+        }
+        groups[date].push(message);
+      });
+      return groups;
+    },
+    [messages]
+  );
 
   // Get last message for an admin
   const getLastMessage = useCallback(
@@ -498,12 +527,14 @@ export default function Chat() {
   );
 
   // Sort dates in ascending order (oldest first, newest last)
-  const sortedDates = useCallback(() => {
-    return Object.keys(groupMessagesByDate()).sort(
-      (a, b) => new Date(a) - new Date(b)
-    );
-  }, [groupMessagesByDate]);
-
+  const sortedDates = useCallback(
+    (msgs = messages) => {
+      return Object.keys(groupMessagesByDate(msgs)).sort(
+        (a, b) => new Date(a) - new Date(b)
+      );
+    },
+    [groupMessagesByDate, messages] // Thêm messages vào đây!
+  );
   // Initial setup - chỉ chạy khi đã xác thực
   useEffect(() => {
     if (!isAuthenticated) return;
@@ -548,6 +579,22 @@ export default function Chat() {
       }
     };
   }, [selectedAdmin, fetchMessages, isAuthenticated]);
+
+  // 1. Khi vào trang, luôn lấy toàn bộ lịch sử tin nhắn với tất cả admin
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    const fetchAllMessages = async () => {
+      try {
+        const response = await api.get("/messages/user");
+        if (response && response.success) {
+          setMessages(response.data);
+        }
+      } catch (error) {
+        console.error("Error fetching all messages:", error);
+      }
+    };
+    fetchAllMessages();
+  }, [isAuthenticated]);
 
   if (!isAuthenticated) {
     return (
@@ -692,7 +739,7 @@ export default function Chat() {
                 <div className="flex justify-center items-center h-full">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
                 </div>
-              ) : messages.length === 0 ? (
+              ) : filteredMessagesByAdmin().length === 0 ? (
                 <div className="h-full flex flex-col items-center justify-center text-gray-500">
                   <div className="w-16 h-16 rounded-full bg-blue-100 flex items-center justify-center mb-4">
                     <MessageCircle size={32} className="text-blue-500" />
@@ -705,14 +752,14 @@ export default function Chat() {
                   </p>
                 </div>
               ) : (
-                sortedDates().map((date) => (
+                sortedDates(filteredMessagesByAdmin()).map((date) => (
                   <div key={date} className="mb-6">
                     <div className="flex justify-center mb-4">
                       <span className="bg-gray-200 text-gray-700 text-xs px-3 py-1 rounded-full">
                         {formatDate(date)}
                       </span>
                     </div>
-                    {groupMessagesByDate()
+                    {groupMessagesByDate(filteredMessagesByAdmin())
                       [date].sort(
                         (a, b) => new Date(a.createdAt) - new Date(b.createdAt)
                       )
@@ -720,8 +767,9 @@ export default function Chat() {
                         const isMine = message.senderType === "User";
                         const isConsecutive =
                           index > 0 &&
-                          groupMessagesByDate()[date][index - 1].senderType ===
-                            message.senderType;
+                          groupMessagesByDate(filteredMessagesByAdmin())[date][
+                            index - 1
+                          ].senderType === message.senderType;
 
                         return (
                           <div
